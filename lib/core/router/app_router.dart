@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../presentation/pages/home_page.dart';
 import '../../presentation/pages/login_page.dart';
 import '../../presentation/pages/splash_page.dart';
 
@@ -11,6 +12,6 @@ class AppRouter {
   static final Map<String, Widget Function(BuildContext)> routes = {
     splashRoute: (_) => const SplashPage(),
     loginRoute: (_) => const LoginPage(),
-    homeRoute: (_) => const SplashPage(),
+    homeRoute: (_) => const HomePage(),
   };
 }

@@ -36,62 +36,64 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: BlocBuilder<LoginBloc, LoginState>(
-          bloc: _bloc,
-          builder: (_, state) {
-            final hasFormError =
-                (state.emailErrorMessage?.isNotEmpty ?? false) || (state.passwordErrorMessage?.isNotEmpty ?? false);
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: BlocConsumer<LoginBloc, LoginState>(
+            listener: (_, state) {
+              if (state is LoginSuccess) _navigateHome();
 
-            if (state is LoginSuccess) _navigateHome();
+              if (state is LoginFailure && state.errorMessage != null) {
+                _showMessage(state.errorMessage ?? '');
+              }
+            },
+            builder: (_, state) {
+              final hasFormError =
+                  (state.emailErrorMessage?.isNotEmpty ?? false) || (state.passwordErrorMessage?.isNotEmpty ?? false);
 
-            if (state is LoginFailure && state.errorMessage != null) {
-              _showMessage(state.errorMessage ?? '');
-            }
-
-            return Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text('Entrar', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  Text('Insira seu email e senha para continuar!'),
-                  SizedBox(height: 16),
-                  AppTextField(
-                    controller: _emailController,
-                    label: 'E-mail',
-                    keyboardType: TextInputType.emailAddress,
-                    errorMessage: state.emailErrorMessage?.isEmpty ?? true ? null : state.emailErrorMessage,
-                    onChanged: (value) => _bloc.add(EmailChanged(email: value)),
-                  ),
-                  const SizedBox(height: 16),
-                  AppTextField(
-                    controller: _passwordController,
-                    label: 'Senha',
-                    keyboardType: TextInputType.text,
-                    isObscure: true,
-                    errorMessage: state.passwordErrorMessage?.isEmpty ?? true ? null : state.passwordErrorMessage,
-                    onChanged: (value) => _bloc.add(PasswordChanged(password: value)),
-                  ),
-                  SizedBox(height: 40),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: ElevatedButton(
-                      onPressed: hasFormError ? null : _onLoginPressed,
-                      child: state is LoginLoading
-                          ? SizedBox.square(
-                              dimension: 24,
-                              child: CircularProgressIndicator(color: AppColors.backgroundColor),
-                            )
-                          : const Text('Entrar'),
+              return Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text('Entrar', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    Text('Insira seu email e senha para continuar!'),
+                    SizedBox(height: 16),
+                    AppTextField(
+                      controller: _emailController,
+                      label: 'E-mail',
+                      keyboardType: TextInputType.emailAddress,
+                      errorMessage: state.emailErrorMessage?.isEmpty ?? true ? null : state.emailErrorMessage,
+                      onChanged: (value) => _bloc.add(EmailChanged(email: value)),
                     ),
-                  ),
-                ],
-              ),
-            );
-          },
+                    const SizedBox(height: 16),
+                    AppTextField(
+                      controller: _passwordController,
+                      label: 'Senha',
+                      keyboardType: TextInputType.text,
+                      isObscure: true,
+                      errorMessage: state.passwordErrorMessage?.isEmpty ?? true ? null : state.passwordErrorMessage,
+                      onChanged: (value) => _bloc.add(PasswordChanged(password: value)),
+                    ),
+                    SizedBox(height: 40),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: ElevatedButton(
+                        onPressed: hasFormError ? null : _onLoginPressed,
+                        child: state is LoginLoading
+                            ? SizedBox.square(
+                                dimension: 24,
+                                child: CircularProgressIndicator(color: AppColors.backgroundColor),
+                              )
+                            : const Text('Entrar'),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );

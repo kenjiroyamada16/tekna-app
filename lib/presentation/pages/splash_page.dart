@@ -34,12 +34,12 @@ class _SplashPageState extends State<SplashPage> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: BlocBuilder<SplashBloc, SplashState>(
-            bloc: _bloc,
-            builder: (_, state) {
+          child: BlocConsumer<SplashBloc, SplashState>(
+            listener: (_, state) {
               if (state is SplashSuccess) _sessionNavigate(state);
-
-              if (state is SplashLoading) {
+            },
+            builder: (_, state) {
+              if (state is SplashLoading || state is SplashSuccess) {
                 return Column(
                   spacing: 20,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
