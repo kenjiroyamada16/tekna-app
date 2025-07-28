@@ -25,6 +25,8 @@ class PasswordChanged extends LoginEvent {
   PasswordChanged({required this.password});
 }
 
+class LoginInit extends LoginEvent {}
+
 // States
 class LoginState {
   final String? emailErrorMessage;
@@ -55,6 +57,7 @@ class LoginSuccess extends LoginState {}
 // Bloc
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
   LoginBloc() : super(LoginInitial()) {
+    on<LoginInit>((_, emit) => emit(LoginInitial()));
     on<LoginWithEmailPassword>(_loginWithEmailPassword);
     on<EmailChanged>(_onEmailChanged);
     on<PasswordChanged>(_onPasswordChanged);

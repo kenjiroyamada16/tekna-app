@@ -5,6 +5,7 @@ abstract class SupabaseServiceProtocol {
 
   Future<void> initialize();
   Future<Session?> get currentSession;
+  Future<void> registerAccountEmailPassword({required String email, required String password});
   Future<void> loginWithEmailAndPassword({required String email, required String password});
 }
 
@@ -33,5 +34,12 @@ class SupabaseService extends SupabaseServiceProtocol {
     final response = await _client.auth.signInWithPassword(email: email, password: password);
 
     if (response.session == null) throw Exception('Houve um erro na requisição');
+  }
+
+  @override
+  Future<void> registerAccountEmailPassword({required String email, required String password}) async {
+    final response = await _client.auth.signUp(email: email, password: password);
+
+    if (response.user == null) throw Exception('Houve um erro na requisição');
   }
 }
