@@ -60,7 +60,7 @@ class _RegisterAccountPageState extends State<RegisterAccountPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text('Criar conta', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                      Text('Informe um email e senha para criar a sua conta e continuar a navegar!'),
+                      Text('Informe um email e senha para criar a sua conta!'),
                       SizedBox(height: 16),
                       AppTextField(
                         controller: _emailController,
@@ -89,7 +89,7 @@ class _RegisterAccountPageState extends State<RegisterAccountPage> {
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         child: ElevatedButton(
-                          onPressed: hasFormError ? null : _onLoginPressed,
+                          onPressed: hasFormError ? null : _onTapCreateAccount,
                           child: state is RegisterAccountLoading
                               ? SizedBox.square(
                                   dimension: 16,
@@ -109,7 +109,7 @@ class _RegisterAccountPageState extends State<RegisterAccountPage> {
     );
   }
 
-  void _onLoginPressed() {
+  void _onTapCreateAccount() {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
