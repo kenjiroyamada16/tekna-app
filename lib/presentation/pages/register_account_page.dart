@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../core/blocs/login_bloc.dart';
+import '../../core/blocs/register_account_bloc.dart';
 import '../../core/router/app_router.dart';
 import '../../shared/components/app_text_field.dart';
 import '../../style/app_colors.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class RegisterAccountPage extends StatefulWidget {
+  const RegisterAccountPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<RegisterAccountPage> createState() => _RegisterAccountPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
-  late final LoginBloc _bloc;
+class _RegisterAccountPageState extends State<RegisterAccountPage> {
+  late final RegisterAccountBloc _bloc;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -22,8 +22,8 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    _bloc = context.read<LoginBloc>();
-    _bloc.add(LoginInit());
+    _bloc = context.read<RegisterAccountBloc>();
+    _bloc.add(RegisterAccountInit());
   }
 
   @override
@@ -41,11 +41,11 @@ class _LoginPageState extends State<LoginPage> {
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: BlocConsumer<LoginBloc, LoginState>(
+            child: BlocConsumer<RegisterAccountBloc, RegisterAccountState>(
               listener: (_, state) {
-                if (state is LoginSuccess) _navigateHome();
+                if (state is RegisterAccountSuccess) _handleAccountRegistration(state.hasSession);
 
-                if (state is LoginFailure && state.errorMessage != null) {
+                if (state is RegisterAccountFailure && state.errorMessage != null) {
                   _showMessage(state.errorMessage ?? '');
                 }
               },
@@ -59,8 +59,8 @@ class _LoginPageState extends State<LoginPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text('Entrar', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                      Text('Insira seu email e senha para continuar!'),
+                      Text('Criar conta', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      Text('Informe um email e senha para criar a sua conta!'),
                       SizedBox(height: 16),
                       AppTextField(
                         controller: _emailController,
@@ -81,21 +81,21 @@ class _LoginPageState extends State<LoginPage> {
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: () => Navigator.pushReplacementNamed(context, AppRouter.registerAccountroute),
-                          child: Text('Ainda não possui conta? Crie uma agora.', style: TextStyle(fontSize: 12)),
+                          onPressed: () => Navigator.pushReplacementNamed(context, AppRouter.loginRoute),
+                          child: Text('Já possui conta? Entre agora!', style: TextStyle(fontSize: 12)),
                         ),
                       ),
                       SizedBox(height: 40),
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         child: ElevatedButton(
-                          onPressed: hasFormError ? null : _onLoginPressed,
-                          child: state is LoginLoading
+                          onPressed: hasFormError ? null : _onTapCreateAccount,
+                          child: state is RegisterAccountLoading
                               ? SizedBox.square(
                                   dimension: 16,
                                   child: CircularProgressIndicator(color: AppColors.backgroundColor),
                                 )
-                              : const Text('Entrar'),
+                              : const Text('Criar conta'),
                         ),
                       ),
                     ],
@@ -109,17 +109,22 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void _onLoginPressed() {
+  void _onTapCreateAccount() {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    _bloc.add(LoginWithEmailPassword(email: email, password: password));
+    _bloc.add(RegisterAccountWithEmailPassword(email: email, password: password));
   }
 
-  void _navigateHome() {
+  void _handleAccountRegistration(bool hasSession) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showMessage('Autenticado com sucesso');
-      Navigator.pushReplacementNamed(context, AppRouter.homeRoute);
+      if (hasSession) {
+        _showMessage('Registrado e autenticado com sucesso');
+        Navigator.pushReplacementNamed(context, AppRouter.homeRoute);
+      } else {
+        _showMessage('Conta criada com sucesso');
+        Navigator.pushReplacementNamed(context, AppRouter.loginRoute);
+      }
     });
   }
 
