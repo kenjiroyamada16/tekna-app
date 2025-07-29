@@ -51,7 +51,8 @@ class _LoginPageState extends State<LoginPage> {
               },
               builder: (_, state) {
                 final hasFormError =
-                    (state.emailErrorMessage?.isNotEmpty ?? false) || (state.passwordErrorMessage?.isNotEmpty ?? false);
+                    (state.emailErrorMessage?.isNotEmpty ?? false) ||
+                    (state.passwordErrorMessage?.isNotEmpty ?? false);
 
                 return Form(
                   key: _formKey,
@@ -66,8 +67,10 @@ class _LoginPageState extends State<LoginPage> {
                         controller: _emailController,
                         label: 'E-mail',
                         keyboardType: TextInputType.emailAddress,
-                        errorMessage: state.emailErrorMessage?.isEmpty ?? true ? null : state.emailErrorMessage,
-                        onChanged: (value) => _bloc.add(EmailChanged(email: value)),
+                        errorMessage: state.emailErrorMessage?.isEmpty ?? true
+                            ? null
+                            : state.emailErrorMessage,
+                        onChanged: (value) => _bloc.add(LoginEmailChanged(email: value)),
                       ),
                       const SizedBox(height: 16),
                       AppTextField(
@@ -75,14 +78,22 @@ class _LoginPageState extends State<LoginPage> {
                         label: 'Senha',
                         keyboardType: TextInputType.text,
                         isObscure: true,
-                        errorMessage: state.passwordErrorMessage?.isEmpty ?? true ? null : state.passwordErrorMessage,
-                        onChanged: (value) => _bloc.add(PasswordChanged(password: value)),
+                        errorMessage: state.passwordErrorMessage?.isEmpty ?? true
+                            ? null
+                            : state.passwordErrorMessage,
+                        onChanged: (value) => _bloc.add(LoginPasswordChanged(password: value)),
                       ),
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: () => Navigator.pushReplacementNamed(context, AppRouter.registerAccountroute),
-                          child: Text('Ainda não possui conta? Crie uma agora.', style: TextStyle(fontSize: 12)),
+                          onPressed: () => Navigator.pushReplacementNamed(
+                            context,
+                            AppRouter.registerAccountroute,
+                          ),
+                          child: Text(
+                            'Ainda não possui conta? Crie uma agora.',
+                            style: TextStyle(fontSize: 12),
+                          ),
                         ),
                       ),
                       SizedBox(height: 40),
@@ -93,7 +104,9 @@ class _LoginPageState extends State<LoginPage> {
                           child: state is LoginLoading
                               ? SizedBox.square(
                                   dimension: 16,
-                                  child: CircularProgressIndicator(color: AppColors.backgroundColor),
+                                  child: CircularProgressIndicator(
+                                    color: AppColors.backgroundColor,
+                                  ),
                                 )
                               : const Text('Entrar'),
                         ),
@@ -125,7 +138,10 @@ class _LoginPageState extends State<LoginPage> {
 
   void _showMessage(String message, [Color? color]) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final snackbar = SnackBar(backgroundColor: color ?? AppColors.primaryColor, content: Text(message));
+      final snackbar = SnackBar(
+        backgroundColor: color ?? AppColors.primaryColor,
+        content: Text(message),
+      );
 
       ScaffoldMessenger.of(context).showSnackBar(snackbar);
     });

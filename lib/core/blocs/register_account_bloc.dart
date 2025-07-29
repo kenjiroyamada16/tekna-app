@@ -13,15 +13,15 @@ class RegisterAccountWithEmailPassword extends RegisterAccountEvent {
   RegisterAccountWithEmailPassword({required this.email, required this.password});
 }
 
-class EmailChanged extends RegisterAccountEvent {
+class RegisterEmailChanged extends RegisterAccountEvent {
   final String email;
 
-  EmailChanged({required this.email});
+  RegisterEmailChanged({required this.email});
 }
 
-class PasswordChanged extends RegisterAccountEvent {
+class RegisterPasswordChanged extends RegisterAccountEvent {
   final String password;
-  PasswordChanged({required this.password});
+  RegisterPasswordChanged({required this.password});
 }
 
 class RegisterAccountInit extends RegisterAccountEvent {}
@@ -62,8 +62,8 @@ class RegisterAccountBloc extends Bloc<RegisterAccountEvent, RegisterAccountStat
   RegisterAccountBloc() : super(RegisterAccountInitial()) {
     on<RegisterAccountInit>((_, emit) => emit(RegisterAccountInitial()));
     on<RegisterAccountWithEmailPassword>(_registerAccountWithEmailPassword);
-    on<EmailChanged>(_onEmailChanged);
-    on<PasswordChanged>(_onPasswordChanged);
+    on<RegisterEmailChanged>(_onEmailChanged);
+    on<RegisterPasswordChanged>(_onPasswordChanged);
   }
 
   Future<void> _registerAccountWithEmailPassword(
@@ -76,35 +76,52 @@ class RegisterAccountBloc extends Bloc<RegisterAccountEvent, RegisterAccountStat
     final passwordError = _validatePassword(event.password);
 
     if (emailError.isNotEmpty || passwordError.isNotEmpty) {
-      return emit(state.copyWith(emailErrorMessage: emailError, passwordErrorMessage: passwordError));
+      return emit(
+        state.copyWith(emailErrorMessage: emailError, passwordErrorMessage: passwordError),
+      );
     }
 
     emit(RegisterAccountLoading());
 
     try {
       final supabaseService = ServiceLocator.get<SupabaseServiceProtocol>();
-      await supabaseService.registerAccountEmailPassword(email: event.email, password: event.password);
+      await supabaseService.registerAccountEmailPassword(
+        email: event.email,
+        password: event.password,
+      );
 
       emit(RegisterAccountSuccess(hasSession: await supabaseService.currentSession != null));
     } on Exception catch (_) {
-      emit(RegisterAccountFailure(errorMessage: 'Ocorreu um erro na requisição. Por favor, tente novamente'));
+      emit(
+        RegisterAccountFailure(
+          errorMessage: 'Ocorreu um erro na requisição. Por favor, tente novamente',
+        ),
+      );
     }
   }
 
-  Future<void> _onEmailChanged(EmailChanged event, Emitter<RegisterAccountState> emit) async {
+  Future<void> _onEmailChanged(
+    RegisterEmailChanged event,
+    Emitter<RegisterAccountState> emit,
+  ) async {
     final emailError = _validateEmail(event.email);
 
     emit(state.copyWith(emailErrorMessage: emailError));
   }
 
-  Future<void> _onPasswordChanged(PasswordChanged event, Emitter<RegisterAccountState> emit) async {
+  Future<void> _onPasswordChanged(
+    RegisterPasswordChanged event,
+    Emitter<RegisterAccountState> emit,
+  ) async {
     final passwordError = _validatePassword(event.password);
 
     emit(state.copyWith(passwordErrorMessage: passwordError));
   }
 
   String _validateEmail(String email) {
-    final emailRegex = RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+");
+    final emailRegex = RegExp(
+      r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
+    );
     if (email.isEmpty) return 'Informe o e-mail';
 
     if (!emailRegex.hasMatch(email)) return 'E-mail inválido';
