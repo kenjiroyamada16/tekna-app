@@ -34,7 +34,10 @@ class LoginState {
 
   LoginState({this.emailErrorMessage, this.passwordErrorMessage});
 
-  LoginState copyWith({String? emailErrorMessage, String? passwordErrorMessage}) {
+  LoginState copyWith({
+    String? emailErrorMessage,
+    String? passwordErrorMessage,
+  }) {
     return LoginState(
       emailErrorMessage: emailErrorMessage ?? this.emailErrorMessage,
       passwordErrorMessage: passwordErrorMessage ?? this.passwordErrorMessage,
@@ -74,7 +77,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     if (emailError.isNotEmpty || passwordError.isNotEmpty) {
       return emit(
-        state.copyWith(emailErrorMessage: emailError, passwordErrorMessage: passwordError),
+        state.copyWith(
+          emailErrorMessage: emailError,
+          passwordErrorMessage: passwordError,
+        ),
       );
     }
 
@@ -82,33 +88,44 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     try {
       final supabaseService = ServiceLocator.get<SupabaseServiceProtocol>();
-      await supabaseService.loginWithEmailAndPassword(email: event.email, password: event.password);
+      await supabaseService.loginWithEmailAndPassword(
+        email: event.email,
+        password: event.password,
+      );
 
       if (await supabaseService.currentSession != null) {
         emit(LoginSuccess());
       } else {
         emit(
-          LoginFailure(
-            errorMessage: 'Não foi possível realizar o login. Por favor, tente novamente.',
-          ),
+          LoginFailure(errorMessage: 'Unable to sign in. Please try again.'),
         );
       }
     } on Exception catch (exception) {
       if (exception is AuthApiException && exception.statusCode == '400') {
-        return emit(LoginFailure(errorMessage: 'Credenciais inválidas'));
+        return emit(LoginFailure(errorMessage: 'Invalid credentials'));
       }
 
-      emit(LoginFailure(errorMessage: 'Ocorreu um erro na requisição. Por favor, tente novamente'));
+      emit(
+        LoginFailure(
+          errorMessage: 'An error occurred with the request. Please try again',
+        ),
+      );
     }
   }
 
-  Future<void> _onEmailChanged(LoginEmailChanged event, Emitter<LoginState> emit) async {
+  Future<void> _onEmailChanged(
+    LoginEmailChanged event,
+    Emitter<LoginState> emit,
+  ) async {
     final emailError = _validateEmail(event.email);
 
     emit(state.copyWith(emailErrorMessage: emailError));
   }
 
-  Future<void> _onPasswordChanged(LoginPasswordChanged event, Emitter<LoginState> emit) async {
+  Future<void> _onPasswordChanged(
+    LoginPasswordChanged event,
+    Emitter<LoginState> emit,
+  ) async {
     final passwordError = _validatePassword(event.password);
 
     emit(state.copyWith(passwordErrorMessage: passwordError));
@@ -118,15 +135,15 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     final emailRegex = RegExp(
       r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
     );
-    if (email.isEmpty) return 'Informe o e-mail';
+    if (email.isEmpty) return 'Enter email';
 
-    if (!emailRegex.hasMatch(email)) return 'E-mail inválido';
+    if (!emailRegex.hasMatch(email)) return 'Invalid email';
 
     return '';
   }
 
   String _validatePassword(String password) {
-    if (password.isEmpty) return 'Informe a senha';
+    if (password.isEmpty) return 'Enter password';
 
     return '';
   }

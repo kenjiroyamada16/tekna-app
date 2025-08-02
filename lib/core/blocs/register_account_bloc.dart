@@ -10,7 +10,10 @@ class RegisterAccountWithEmailPassword extends RegisterAccountEvent {
   final String email;
   final String password;
 
-  RegisterAccountWithEmailPassword({required this.email, required this.password});
+  RegisterAccountWithEmailPassword({
+    required this.email,
+    required this.password,
+  });
 }
 
 class RegisterEmailChanged extends RegisterAccountEvent {
@@ -33,7 +36,10 @@ class RegisterAccountState {
 
   RegisterAccountState({this.emailErrorMessage, this.passwordErrorMessage});
 
-  RegisterAccountState copyWith({String? emailErrorMessage, String? passwordErrorMessage}) {
+  RegisterAccountState copyWith({
+    String? emailErrorMessage,
+    String? passwordErrorMessage,
+  }) {
     return RegisterAccountState(
       emailErrorMessage: emailErrorMessage ?? this.emailErrorMessage,
       passwordErrorMessage: passwordErrorMessage ?? this.passwordErrorMessage,
@@ -58,7 +64,8 @@ class RegisterAccountSuccess extends RegisterAccountState {
 }
 
 // Bloc
-class RegisterAccountBloc extends Bloc<RegisterAccountEvent, RegisterAccountState> {
+class RegisterAccountBloc
+    extends Bloc<RegisterAccountEvent, RegisterAccountState> {
   RegisterAccountBloc() : super(RegisterAccountInitial()) {
     on<RegisterAccountInit>((_, emit) => emit(RegisterAccountInitial()));
     on<RegisterAccountWithEmailPassword>(_registerAccountWithEmailPassword);
@@ -77,7 +84,10 @@ class RegisterAccountBloc extends Bloc<RegisterAccountEvent, RegisterAccountStat
 
     if (emailError.isNotEmpty || passwordError.isNotEmpty) {
       return emit(
-        state.copyWith(emailErrorMessage: emailError, passwordErrorMessage: passwordError),
+        state.copyWith(
+          emailErrorMessage: emailError,
+          passwordErrorMessage: passwordError,
+        ),
       );
     }
 
@@ -90,11 +100,15 @@ class RegisterAccountBloc extends Bloc<RegisterAccountEvent, RegisterAccountStat
         password: event.password,
       );
 
-      emit(RegisterAccountSuccess(hasSession: await supabaseService.currentSession != null));
+      emit(
+        RegisterAccountSuccess(
+          hasSession: await supabaseService.currentSession != null,
+        ),
+      );
     } on Exception catch (_) {
       emit(
         RegisterAccountFailure(
-          errorMessage: 'Ocorreu um erro na requisição. Por favor, tente novamente',
+          errorMessage: 'An error occurred with the request. Please try again',
         ),
       );
     }
@@ -122,15 +136,15 @@ class RegisterAccountBloc extends Bloc<RegisterAccountEvent, RegisterAccountStat
     final emailRegex = RegExp(
       r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
     );
-    if (email.isEmpty) return 'Informe o e-mail';
+    if (email.isEmpty) return 'Enter email';
 
-    if (!emailRegex.hasMatch(email)) return 'E-mail inválido';
+    if (!emailRegex.hasMatch(email)) return 'Invalid email';
 
     return '';
   }
 
   String _validatePassword(String password) {
-    if (password.isEmpty) return 'Informe a senha';
+    if (password.isEmpty) return 'Enter password';
 
     return '';
   }

@@ -43,9 +43,12 @@ class _RegisterAccountPageState extends State<RegisterAccountPage> {
             padding: const EdgeInsets.all(24),
             child: BlocConsumer<RegisterAccountBloc, RegisterAccountState>(
               listener: (_, state) {
-                if (state is RegisterAccountSuccess) _handleAccountRegistration(state.hasSession);
+                if (state is RegisterAccountSuccess) {
+                  _handleAccountRegistration(state.hasSession);
+                }
 
-                if (state is RegisterAccountFailure && state.errorMessage != null) {
+                if (state is RegisterAccountFailure &&
+                    state.errorMessage != null) {
                   _showMessage(state.errorMessage ?? '');
                 }
               },
@@ -61,10 +64,13 @@ class _RegisterAccountPageState extends State<RegisterAccountPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'Criar conta',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        'Register account',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      Text('Informe um email e senha para criar a sua conta!'),
+                      Text('Enter your email and password to register an account!'),
                       SizedBox(height: 16),
                       AppTextField(
                         controller: _emailController,
@@ -73,7 +79,9 @@ class _RegisterAccountPageState extends State<RegisterAccountPage> {
                         errorMessage: state.emailErrorMessage?.isEmpty ?? true
                             ? null
                             : state.emailErrorMessage,
-                        onChanged: (value) => _bloc.add(RegisterEmailChanged(email: value)),
+                        onChanged: (value) {
+                          _bloc.add(RegisterEmailChanged(email: value));
+                        },
                       ),
                       const SizedBox(height: 16),
                       AppTextField(
@@ -81,18 +89,23 @@ class _RegisterAccountPageState extends State<RegisterAccountPage> {
                         label: 'Senha',
                         keyboardType: TextInputType.text,
                         isObscure: true,
-                        errorMessage: state.passwordErrorMessage?.isEmpty ?? true
+                        errorMessage:
+                            state.passwordErrorMessage?.isEmpty ?? true
                             ? null
                             : state.passwordErrorMessage,
-                        onChanged: (value) => _bloc.add(RegisterPasswordChanged(password: value)),
+                        onChanged: (value) {
+                          _bloc.add(RegisterPasswordChanged(password: value));
+                        },
                       ),
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: () =>
-                              Navigator.pushReplacementNamed(context, AppRouter.loginRoute),
+                          onPressed: () => Navigator.pushReplacementNamed(
+                            context,
+                            AppRouter.loginRoute,
+                          ),
                           child: Text(
-                            'Já possui conta? Entre agora!',
+                            'Already have an account? Sign in now!',
                             style: TextStyle(fontSize: 12),
                           ),
                         ),
@@ -109,7 +122,7 @@ class _RegisterAccountPageState extends State<RegisterAccountPage> {
                                     color: AppColors.backgroundColor,
                                   ),
                                 )
-                              : const Text('Criar conta'),
+                              : const Text('Register account'),
                         ),
                       ),
                     ],
@@ -127,16 +140,18 @@ class _RegisterAccountPageState extends State<RegisterAccountPage> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    _bloc.add(RegisterAccountWithEmailPassword(email: email, password: password));
+    _bloc.add(
+      RegisterAccountWithEmailPassword(email: email, password: password),
+    );
   }
 
   void _handleAccountRegistration(bool hasSession) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (hasSession) {
-        _showMessage('Registrado e autenticado com sucesso');
+        _showMessage('Registered and authenticated successfully');
         Navigator.pushReplacementNamed(context, AppRouter.homeRoute);
       } else {
-        _showMessage('Conta criada com sucesso');
+        _showMessage('Account created successfully');
         Navigator.pushReplacementNamed(context, AppRouter.loginRoute);
       }
     });

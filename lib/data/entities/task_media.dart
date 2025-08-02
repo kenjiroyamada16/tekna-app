@@ -8,4 +8,12 @@ class TaskMedia {
   factory TaskMedia.fromJson(Map<String, dynamic> json) {
     return TaskMedia(id: json['id'], type: json['type'], url: json['url']);
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'type': type,
+      'url': url,
+    };
+  }
 }
