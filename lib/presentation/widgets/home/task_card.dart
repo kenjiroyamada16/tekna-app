@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../data/entities/task.dart';
 import '../../../shared/enum/task_status.dart';
+import '../../../shared/utils/extensions/date_extensions.dart';
 import '../../../style/app_colors.dart';
 
 class TaskCard extends StatelessWidget {
@@ -9,7 +10,12 @@ class TaskCard extends StatelessWidget {
   final void Function(int taskId)? onTapDeleteTask;
   final void Function(Task oldTask)? onTapEditTask;
 
-  const TaskCard({required this.task, super.key, this.onTapDeleteTask, this.onTapEditTask});
+  const TaskCard({
+    required this.task,
+    super.key,
+    this.onTapDeleteTask,
+    this.onTapEditTask,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -103,27 +109,98 @@ class TaskCard extends StatelessWidget {
               ),
             ),
             SizedBox(width: 16),
-            ElevatedButton(
-              onPressed: () => onTapEditTask?.call(task),
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.all(8),
-                textStyle: TextStyle(fontSize: 12),
-              ),
-              child: Text('Editar'),
-            ),
-            SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: () => onTapDeleteTask?.call(task.id),
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.all(8),
-                textStyle: TextStyle(fontSize: 12),
-                backgroundColor: AppColors.errorColor,
-              ),
-              child: Text('Excluir'),
+            Column(
+              spacing: 8,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                SizedBox.shrink(),
+                Row(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => onTapEditTask?.call(task),
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.all(8),
+                        textStyle: TextStyle(fontSize: 12),
+                      ),
+                      child: Text('Edit'),
+                    ),
+                    SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () => onTapDeleteTask?.call(task.id),
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.all(8),
+                        textStyle: TextStyle(fontSize: 12),
+                        backgroundColor: AppColors.errorColor,
+                      ),
+                      child: Text('Delete'),
+                    ),
+                  ],
+                ),
+                Visibility(
+                  visible: task.expiryDate != null,
+                  child: Row(
+                    spacing: 8,
+                    children: [
+                      Icon(Icons.access_time_outlined, size: 16),
+                      _expiryDateLabelWidget,
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget get _expiryDateLabelWidget {
+    final expiryDate = task.expiryDate;
+
+    if (expiryDate == null) {
+      return const SizedBox.shrink();
+    }
+
+    if (expiryDate.isBefore(DateTime.now())) {
+      return const Text(
+        'Expired',
+        style: TextStyle(fontSize: 12, color: AppColors.errorColor),
+      );
+    }
+
+    final timeLeft = expiryDate.difference(DateTime.now());
+
+    if (timeLeft.inDays <= 7 && timeLeft.inDays > 1) {
+      return Text(
+        'Expiring in ${timeLeft.inDays} days',
+        style: TextStyle(fontSize: 12, color: AppColors.errorColor),
+      );
+    }
+
+    if (timeLeft.inDays <= 1) {
+      return Text(
+        'Expiring in ${timeLeft.inHours} hours',
+        style: TextStyle(fontSize: 12, color: AppColors.errorColor),
+      );
+    }
+
+    if (timeLeft.inHours <= 1) {
+      return Text(
+        'Expiring in ${timeLeft.inMinutes} minutes',
+        style: TextStyle(fontSize: 12, color: AppColors.errorColor),
+      );
+    }
+
+    if (timeLeft.inMinutes <= 1) {
+      return Text(
+        'Expiring in under 1 minute',
+        style: TextStyle(fontSize: 12, color: AppColors.errorColor),
+      );
+    }
+
+    return Text(
+      expiryDate.toFormattedDate(),
+      style: const TextStyle(fontSize: 12, color: AppColors.primaryColor),
     );
   }
 }

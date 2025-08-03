@@ -38,6 +38,9 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
     _expiryDateTextController.text =
         widget.task.expiryDate?.toFormattedDate() ?? '';
     _categories.addAll(widget.categories);
+    _selectedCategory = _categories.where((category) {
+      return category.id == widget.task.category?.id;
+    }).firstOrNull;
     _selectedStatus =
         TaskStatus.values.where((status) {
           return status.label == widget.task.status;
@@ -56,7 +59,7 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text(
-        'New Task',
+        'Edit Task',
         style: TextStyle(
           fontWeight: FontWeight.bold,
           color: AppColors.primaryColor,
@@ -100,6 +103,7 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
               DropdownMenu<TaskCategory?>(
                 label: Text('Category'),
                 expandedInsets: EdgeInsets.zero,
+                initialSelection: _selectedCategory,
                 inputDecorationTheme: InputDecorationTheme(
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -134,6 +138,21 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
               TextFormField(
                 controller: _expiryDateTextController,
                 inputFormatters: [DateInputFormatter()],
+                validator: (date) {
+                  if (date?.isEmpty ?? true) return null;
+
+                  final expiryDate = DateTime.tryParse(
+                    date?.replaceAll('/', '-') ?? '',
+                  );
+
+                  if (expiryDate == null) return 'Invalid date';
+
+                  if (expiryDate.isBefore(DateTime.now())) {
+                    return "Expiry date can't be in the past";
+                  }
+
+                  return null;
+                },
                 decoration: InputDecoration(
                   labelText: 'Expiry Date',
                   hint: Text('yyyy/MM/dd'),
@@ -153,26 +172,26 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: _createTask,
+          onPressed: _editTask,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primaryColor,
             foregroundColor: Colors.white,
           ),
-          child: const Text('Create'),
+          child: const Text('Edit'),
         ),
       ],
     );
   }
 
-  void _createTask() {
+  void _editTask() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final newTask = Task(
-      id: 0,
+      id: widget.task.id,
       title: _titleController.text,
       description: _descriptionController.text,
       status: _selectedStatus.label,
@@ -188,7 +207,7 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
   Future<void> _didTapPickDate() async {
     final selectedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: widget.task.expiryDate,
       firstDate: DateTime.now(),
       lastDate: DateTime(3000),
     );
