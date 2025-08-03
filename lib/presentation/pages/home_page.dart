@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
-import 'package:intl/intl.dart';
 
 import '../../core/blocs/home_bloc.dart';
 import '../../data/entities/task.dart';
-import '../../shared/enum/task_status.dart';
-import '../../shared/utils/date_input_formatter.dart';
+import '../../data/entities/task_category.dart';
 import '../../style/app_colors.dart';
+import '../widgets/bottom_sheet/confirm_delete_task_bottom_sheet.dart';
+import '../widgets/dialogs/create_task_dialog.dart';
+import '../widgets/dialogs/edit_task_dialog.dart';
 import '../widgets/home/task_card.dart';
 
 class HomePage extends StatefulWidget {
@@ -53,12 +54,24 @@ class _HomePageState extends State<HomePage> {
       body: BlocConsumer<HomeBloc, HomeState>(
         bloc: _homeBloc,
         listener: (_, state) {
+          if (state is HomeSuccess && state.message != null) {
+            _showSuccessMessage(state.message ?? '');
+          }
+
           if (state is HomeCreateTaskDialog) {
             _showCreateTaskDialog(state.categories);
           }
 
           if (state is HomeError) {
             _showErrorMessage(state.message);
+          }
+
+          if (state is HomeDeleteTaskBottomSheet) {
+            _showDeleteTaskBottomSheet(state.taskId);
+          }
+
+          if (state is HomeEditTaskDialog) {
+            _showEditTaskDialog(state.task, state.categories);
           }
         },
         builder: (_, state) {
@@ -115,12 +128,20 @@ class _HomePageState extends State<HomePage> {
             }
 
             return ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 64),
               itemCount: state.tasks.length,
               itemBuilder: (_, index) {
                 final task = state.tasks[index];
 
-                return TaskCard(task: task);
+                return TaskCard(
+                  task: task,
+                  onTapEditTask: (oldTask) {
+                    _homeBloc.add(HomeShowEditTaskDialog(task));
+                  },
+                  onTapDeleteTask: (taskId) {
+                    _homeBloc.add(HomeShowDeleteTaskBottomSheet(taskId));
+                  },
+                );
               },
             );
           }
@@ -174,7 +195,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Future<void> _showCreateTaskDialog(List<String> categories) async {
+  Future<void> _showCreateTaskDialog(List<TaskCategory> categories) async {
     final result = await showDialog(
       context: context,
       builder: (_) {
@@ -183,6 +204,19 @@ class _HomePageState extends State<HomePage> {
     );
 
     if (result is Task) _homeBloc.add(HomeCreateTask(newTask: result));
+  }
+
+  Future<void> _showDeleteTaskBottomSheet(int taskId) async {
+    await showModalBottomSheet(
+      context: context,
+      builder: (_) {
+        return ConfirmDeleteTaskBottomSheet(
+          onTapConfirmDelete: () {
+            _homeBloc.add(HomeConfirmDeleteTask(taskId));
+          },
+        );
+      },
+    );
   }
 
   void _showErrorMessage(String errorMessage) {
@@ -200,181 +234,34 @@ class _HomePageState extends State<HomePage> {
 
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
-}
 
-class CreateTaskDialog extends StatefulWidget {
-  final List<String> categories;
-
-  const CreateTaskDialog({required this.categories, super.key});
-
-  @override
-  State<CreateTaskDialog> createState() => _CreateTaskDialogState();
-}
-
-class _CreateTaskDialogState extends State<CreateTaskDialog> {
-  final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _categories = List<String>.empty(growable: true);
-  final _expiryDateTextController = TextEditingController();
-  String _selectedStatus = TaskStatus.todo.name;
-  String? _selectedCategory;
-
-  @override
-  void initState() {
-    super.initState();
-    _categories.addAll(widget.categories);
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text(
-        'New Task',
+  void _showSuccessMessage(String message) {
+    final snackBar = SnackBar(
+      backgroundColor: AppColors.secondaryColor,
+      content: Text(
+        message,
         style: TextStyle(
-          fontWeight: FontWeight.bold,
-          color: AppColors.primaryColor,
+          fontSize: 14,
+          color: AppColors.white,
+          fontWeight: FontWeight.w600,
         ),
       ),
-      content: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(vertical: 12),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            spacing: 16,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _titleController,
-                decoration: InputDecoration(
-                  labelText: 'Title',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppColors.grey),
-                  ),
-                ),
-                validator: (value) {
-                  if (value?.trim().isEmpty ?? false) {
-                    return "Title can't be blank";
-                  }
-
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppColors.grey),
-                  ),
-                ),
-              ),
-              DropdownMenu<String?>(
-                label: Text('Category'),
-                expandedInsets: EdgeInsets.zero,
-                inputDecorationTheme: InputDecorationTheme(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                dropdownMenuEntries: _categories.map((value) {
-                  return DropdownMenuEntry(value: value, label: value);
-                }).toList(),
-                onSelected: (value) {
-                  _selectedCategory = value;
-                },
-              ),
-              DropdownMenu<String?>(
-                label: Text('Status'),
-                initialSelection: TaskStatus.todo.name,
-                expandedInsets: EdgeInsets.zero,
-                inputDecorationTheme: InputDecorationTheme(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                dropdownMenuEntries: TaskStatus.values.map((value) {
-                  return DropdownMenuEntry(
-                    value: value.name,
-                    label: value.label,
-                  );
-                }).toList(),
-                onSelected: (value) {
-                  _selectedStatus = value ?? TaskStatus.todo.name;
-                },
-              ),
-              TextFormField(
-                controller: _expiryDateTextController,
-                inputFormatters: [DateInputFormatter()],
-                decoration: InputDecoration(
-                  labelText: 'Expiry Date',
-                  hint: Text('yyyy/MM/dd'),
-                  suffixIcon: GestureDetector(
-                    onTap: _didTapPickDate,
-                    child: Icon(Icons.calendar_month),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppColors.grey),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: _createTask,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primaryColor,
-            foregroundColor: Colors.white,
-          ),
-          child: const Text('Create'),
-        ),
-      ],
-    );
-  }
-
-  void _createTask() {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-
-    final newTask = Task(
-      id: 0,
-      title: _titleController.text,
-      description: _descriptionController.text,
-      status: _selectedStatus,
-      categoryName: _selectedCategory,
-      expiryDate: DateTime.tryParse(_expiryDateTextController.text),
     );
 
-    Navigator.of(context).pop(newTask);
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
-  Future<void> _didTapPickDate() async {
-    final selectedDate = await showDatePicker(
+  Future<void> _showEditTaskDialog(
+    Task task,
+    List<TaskCategory> categories,
+  ) async {
+    final result = await showDialog(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(3000),
+      builder: (_) {
+        return EditTaskDialog(task: task, categories: categories);
+      },
     );
 
-    if (selectedDate == null) return;
-
-    final formatter = DateFormat('yyyy/MM/dd');
-    _expiryDateTextController.text = formatter.format(selectedDate);
+    if (result is Task) _homeBloc.add(HomeEditTask(result));
   }
 }

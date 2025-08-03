@@ -1,3 +1,5 @@
+import '../../shared/utils/extensions/date_extensions.dart';
+import 'task_category.dart';
 import 'task_media.dart';
 
 class Task {
@@ -6,7 +8,7 @@ class Task {
   final String status;
   final TaskMedia? media;
   final String? description;
-  final String? categoryName;
+  final TaskCategory? category;
   final DateTime? expiryDate;
 
   Task({
@@ -15,7 +17,7 @@ class Task {
     required this.status,
     this.media,
     this.description,
-    this.categoryName,
+    this.category,
     this.expiryDate,
   });
 
@@ -27,7 +29,9 @@ class Task {
       title: json['title'],
       status: json['status'],
       description: json['description'],
-      categoryName: json['category']?['name'],
+      category: json['category'] != null
+          ? TaskCategory.fromJson(json['category'])
+          : null,
       expiryDate: DateTime.tryParse(json['expiry_date'] ?? ''),
       media: (mediaJsonList?.isNotEmpty ?? false)
           ? TaskMedia.fromJson(mediaJsonList?.first as Map<String, dynamic>)
@@ -37,13 +41,11 @@ class Task {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'title': title,
       'status': status,
-      'description': description,
-      'category': categoryName,
-      'expiry_date': expiryDate?.toIso8601String(),
-      'media': media?.toJson(),
+      if (description != null) 'description': description,
+      if (category != null) 'category_id': category?.id,
+      if (expiryDate != null) 'expiry_date': expiryDate?.toDbFormat(),
     };
   }
 }

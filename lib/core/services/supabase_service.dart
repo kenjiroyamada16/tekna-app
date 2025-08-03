@@ -2,16 +2,28 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/domain/app_exception.dart';
 import '../../data/entities/task.dart';
+import '../../data/entities/task_category.dart';
+import '../../shared/enum/task_status.dart';
 
 abstract class SupabaseServiceProtocol {
   User? get user;
   Future<Session?> get currentSession;
 
   Future<void> initialize();
-  Future<void> registerAccountEmailPassword({required String email, required String password});
-  Future<void> loginWithEmailAndPassword({required String email, required String password});
+  Future<void> registerAccountEmailPassword({
+    required String email,
+    required String password,
+  });
+  Future<void> loginWithEmailAndPassword({
+    required String email,
+    required String password,
+  });
 
   Future<List<Task>> getUserTasks();
+  Future<void> createTask(Task newTask);
+  Future<void> deleteTask(int taskId);
+  Future<void> updateTask(Task updatedTask);
+  Future<List<TaskCategory>> getUserCategories();
 }
 
 class SupabaseService extends SupabaseServiceProtocol {
@@ -35,16 +47,27 @@ class SupabaseService extends SupabaseServiceProtocol {
   }
 
   @override
-  Future<void> loginWithEmailAndPassword({required String email, required String password}) async {
+  Future<void> loginWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) async {
     try {
-      final response = await _client.auth.signInWithPassword(email: email, password: password);
+      final response = await _client.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
 
       if (response.session == null) {
-        throw AppException(userFriendlyMessage: 'Houve um erro na requisição');
+        throw AppException(
+          userFriendlyMessage: 'There was an error with the request',
+        );
       }
     } on Exception catch (e, stackTrace) {
       Error.throwWithStackTrace(
-        AppException(error: e, userFriendlyMessage: 'Houve um erro na requisição'),
+        AppException(
+          error: e,
+          userFriendlyMessage: 'There was an error with the request',
+        ),
         stackTrace,
       );
     }
@@ -56,14 +79,22 @@ class SupabaseService extends SupabaseServiceProtocol {
     required String password,
   }) async {
     try {
-      final response = await _client.auth.signUp(email: email, password: password);
+      final response = await _client.auth.signUp(
+        email: email,
+        password: password,
+      );
 
       if (response.user == null) {
-        throw AppException(userFriendlyMessage: 'Houve um erro na requisição');
+        throw AppException(
+          userFriendlyMessage: 'There was an error with the request',
+        );
       }
     } on Exception catch (e, stackTrace) {
       Error.throwWithStackTrace(
-        AppException(error: e, userFriendlyMessage: 'Houve um erro na requisição'),
+        AppException(
+          error: e,
+          userFriendlyMessage: 'There was an error with the request',
+        ),
         stackTrace,
       );
     }
@@ -71,19 +102,120 @@ class SupabaseService extends SupabaseServiceProtocol {
 
   @override
   Future<List<Task>> getUserTasks() async {
-    if (user == null) throw AppException(userFriendlyMessage: 'Usuário não autenticado');
+    if (user == null) {
+      throw AppException(userFriendlyMessage: 'User not authenticated');
+    }
 
     try {
       final response = await _client
           .from('tasks')
-          .select('*, category:categories(name), media(*)')
+          .select('*, category:categories(id,name), media(*)')
           .eq('user_id', user?.id ?? -1)
           .order('created_at', ascending: false);
 
-      return response.map((map) => Task.fromJson(map)).toList();
+      final tasksList = response.map((map) => Task.fromJson(map)).toList();
+      tasksList.sort((a, b) {
+        final aStatus = TaskStatus.values
+            .where((status) => status.label == a.status)
+            .firstOrNull;
+        final bStatus = TaskStatus.values
+            .where((status) => status.label == b.status)
+            .firstOrNull;
+
+        return aStatus?.index.compareTo(bStatus?.index ?? 0) ?? 0;
+      });
+
+      return tasksList;
     } on Exception catch (e, stackTrace) {
       Error.throwWithStackTrace(
-        AppException(error: e, userFriendlyMessage: 'Houve um erro na requisição'),
+        AppException(
+          error: e,
+          userFriendlyMessage: 'There was an error with the request',
+        ),
+        stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<void> createTask(Task newTask) async {
+    try {
+      if (user == null) {
+        throw AppException(userFriendlyMessage: 'User not authenticated');
+      }
+
+      final taskMap = newTask.toJson();
+      taskMap['user_id'] = user?.id;
+
+      await _client.from('tasks').insert(taskMap);
+    } on Exception catch (e, stackTrace) {
+      Error.throwWithStackTrace(
+        AppException(error: e, userFriendlyMessage: 'Error creating task'),
+        stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<void> deleteTask(int taskId) async {
+    if (user == null) {
+      throw AppException(userFriendlyMessage: 'User not authenticated');
+    }
+
+    try {
+      await _client.from('tasks').delete().eq('id', taskId);
+    } on Exception catch (e, stackTrace) {
+      Error.throwWithStackTrace(
+        AppException(error: e, userFriendlyMessage: 'Error deleting task'),
+        stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<void> updateTask(Task updatedTask) async {
+    if (user == null) {
+      throw AppException(userFriendlyMessage: 'User not authenticated');
+    }
+
+    try {
+      final taskMap = updatedTask.toJson();
+      taskMap['user_id'] = user?.id;
+      taskMap['id'] = updatedTask.id;
+
+      await _client.from('tasks').update(taskMap).eq('id', updatedTask.id);
+    } on Exception catch (e, stackTrace) {
+      Error.throwWithStackTrace(
+        AppException(error: e, userFriendlyMessage: 'Error updating task'),
+        stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<List<TaskCategory>> getUserCategories() async {
+    if (user == null) {
+      throw AppException(userFriendlyMessage: 'User not authenticated');
+    }
+
+    try {
+      final response = await _client
+          .from('categories')
+          .select('id, name')
+          .eq('user_id', user?.id ?? -1);
+      final categories = response.map((json) {
+        return TaskCategory.fromJson(json);
+      }).toList();
+
+      categories.sort((a, b) => a.name.compareTo(b.name));
+
+      return categories;
+    } on Exception catch (e, stackTrace) {
+      Error.throwWithStackTrace(
+        AppException(
+          error: e,
+          userFriendlyMessage: 'Error fetching categories',
+        ),
         stackTrace,
       );
     }

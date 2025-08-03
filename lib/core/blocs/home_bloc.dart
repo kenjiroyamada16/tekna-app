@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/domain/app_exception.dart';
 import '../../data/entities/task.dart';
+import '../../data/entities/task_category.dart';
 import '../di/injector.dart';
 import '../services/supabase_service.dart';
 
@@ -20,7 +21,31 @@ class HomeCreateTask extends HomeEvent {
   HomeCreateTask({required this.newTask});
 }
 
+class HomeEditTask extends HomeEvent {
+  final Task task;
+
+  HomeEditTask(this.task);
+}
+
+class HomeShowEditTaskDialog extends HomeEvent {
+  final Task task;
+
+  HomeShowEditTaskDialog(this.task);
+}
+
 class HomeShowCreateTaskDialog extends HomeEvent {}
+
+class HomeShowDeleteTaskBottomSheet extends HomeEvent {
+  final int taskId;
+
+  HomeShowDeleteTaskBottomSheet(this.taskId);
+}
+
+class HomeConfirmDeleteTask extends HomeEvent {
+  final int taskId;
+
+  HomeConfirmDeleteTask(this.taskId);
+}
 
 // States
 abstract class HomeState {}
@@ -31,8 +56,9 @@ class HomeLoading extends HomeState {}
 
 class HomeSuccess extends HomeState {
   final List<Task> tasks;
+  final String? message;
 
-  HomeSuccess(this.tasks);
+  HomeSuccess({required this.tasks, this.message});
 }
 
 class HomeError extends HomeState {
@@ -42,14 +68,28 @@ class HomeError extends HomeState {
 }
 
 class HomeCreateTaskDialog extends HomeState {
-  final List<String> categories;
+  final List<TaskCategory> categories;
 
   HomeCreateTaskDialog(this.categories);
 }
 
+class HomeEditTaskDialog extends HomeState {
+  final Task task;
+  final List<TaskCategory> categories;
+
+  HomeEditTaskDialog(this.task, this.categories);
+}
+
+class HomeDeleteTaskBottomSheet extends HomeState {
+  final int taskId;
+
+  HomeDeleteTaskBottomSheet(this.taskId);
+}
+
 // Bloc
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
-  final _categoriesList = List<String>.empty(growable: true);
+  final _tasksList = List<Task>.empty(growable: true);
+  final _categoriesList = List<TaskCategory>.empty(growable: true);
 
   late final SupabaseServiceProtocol _supabaseService;
 
@@ -59,6 +99,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<HomeLoadTasks>(_onLoadTasks);
     on<HomeCreateTask>(_onCreateTask);
     on<HomeShowCreateTaskDialog>(_showCreateTaskDialog);
+    on<HomeShowDeleteTaskBottomSheet>(_showDeleteTaskBottomSheet);
+    on<HomeConfirmDeleteTask>(_onConfirmDeleteTask);
+    on<HomeShowEditTaskDialog>(_showEditTaskDialog);
+    on<HomeEditTask>(_onEditTask);
   }
 
   Future<void> _onLoadTasks(
@@ -71,9 +115,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       final tasks = await _supabaseService.getUserTasks();
       final categories = await _supabaseService.getUserCategories();
 
+      _tasksList.clear();
+      _tasksList.addAll(tasks);
+      _categoriesList.clear();
       _categoriesList.addAll(categories);
 
-      emit(HomeSuccess(tasks));
+      emit(HomeSuccess(tasks: _tasksList));
     } on Exception catch (e) {
       if (e is AppException) emit(HomeError(e.userFriendlyMessage));
     }
@@ -88,7 +135,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
       final tasks = await _supabaseService.getUserTasks();
 
-      emit(HomeSuccess(tasks));
+      _tasksList.clear();
+      _tasksList.addAll(tasks);
+
+      emit(HomeSuccess(tasks: tasks));
     } on Exception catch (e) {
       if (e is AppException) {
         emit(HomeError(e.userFriendlyMessage));
@@ -103,5 +153,67 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     Emitter<HomeState> emit,
   ) async {
     emit(HomeCreateTaskDialog(_categoriesList));
+    emit(HomeSuccess(tasks: _tasksList));
+  }
+
+  Future<void> _showDeleteTaskBottomSheet(
+    HomeShowDeleteTaskBottomSheet event,
+    Emitter<HomeState> emit,
+  ) async {
+    emit(HomeDeleteTaskBottomSheet(event.taskId));
+    emit(HomeSuccess(tasks: _tasksList));
+  }
+
+  Future<void> _onConfirmDeleteTask(
+    HomeConfirmDeleteTask event,
+    Emitter<HomeState> emit,
+  ) async {
+    emit(HomeLoading());
+
+    try {
+      await _supabaseService.deleteTask(event.taskId);
+
+      final tasks = await _supabaseService.getUserTasks();
+
+      _tasksList.clear();
+      _tasksList.addAll(tasks);
+
+      emit(HomeSuccess(tasks: tasks, message: 'Task deleted successfully'));
+    } on Exception catch (e) {
+      if (e is AppException) {
+        emit(HomeError(e.userFriendlyMessage));
+      } else {
+        emit(HomeError('Error deleting task'));
+      }
+    }
+  }
+
+  Future<void> _showEditTaskDialog(
+    HomeShowEditTaskDialog event,
+    Emitter<HomeState> emit,
+  ) async {
+    emit(HomeEditTaskDialog(event.task, _categoriesList));
+    emit(HomeSuccess(tasks: _tasksList));
+  }
+
+  Future<void> _onEditTask(HomeEditTask event, Emitter<HomeState> emit) async {
+    emit(HomeLoading());
+
+    try {
+      await _supabaseService.updateTask(event.task);
+
+      final tasks = await _supabaseService.getUserTasks();
+
+      _tasksList.clear();
+      _tasksList.addAll(tasks);
+
+      emit(HomeSuccess(tasks: tasks, message: 'Task updated successfully'));
+    } on Exception catch (e) {
+      if (e is AppException) {
+        emit(HomeError(e.userFriendlyMessage));
+      } else {
+        emit(HomeError('Error updating task'));
+      }
+    }
   }
 }
