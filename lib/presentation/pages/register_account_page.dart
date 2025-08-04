@@ -107,7 +107,7 @@ class _RegisterAccountPageState extends State<RegisterAccountPage> {
                             AppRouter.loginRoute,
                           ),
                           child: Text(
-                            'Already have an account? Sign in now!',
+                            'Already have an account?',
                             style: TextStyle(fontSize: 12),
                           ),
                         ),

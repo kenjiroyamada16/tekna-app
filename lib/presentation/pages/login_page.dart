@@ -100,7 +100,7 @@ class _LoginPageState extends State<LoginPage> {
                             AppRouter.registerAccountroute,
                           ),
                           child: Text(
-                            "Don't have an account yet? Create one now.",
+                            "Don't have an account yet?",
                             style: TextStyle(fontSize: 12),
                           ),
                         ),
