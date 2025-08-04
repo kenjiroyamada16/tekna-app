@@ -38,12 +38,12 @@ class ConfirmDeleteTaskBottomSheet extends StatelessWidget {
               ),
             ),
             Text(
-              'Confirmar',
+              'Confirm',
               textAlign: TextAlign.center,
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 24),
             ),
             Text(
-              'Deseja mesmo excluir a tarefa?',
+              'Do you really want to delete this task?',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16),
             ),
@@ -53,7 +53,7 @@ class ConfirmDeleteTaskBottomSheet extends StatelessWidget {
                 Navigator.pop(context);
                 onTapConfirmDelete?.call();
               },
-              child: Text('Excluir'),
+              child: Text('Delete'),
             ),
           ],
         ),

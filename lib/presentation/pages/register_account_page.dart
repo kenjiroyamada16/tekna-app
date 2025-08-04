@@ -70,11 +70,13 @@ class _RegisterAccountPageState extends State<RegisterAccountPage> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Text('Enter your email and password to register an account!'),
+                      Text(
+                        'Enter your email and password to register an account!',
+                      ),
                       SizedBox(height: 16),
                       AppTextField(
                         controller: _emailController,
-                        label: 'E-mail',
+                        label: 'Email',
                         keyboardType: TextInputType.emailAddress,
                         errorMessage: state.emailErrorMessage?.isEmpty ?? true
                             ? null
@@ -86,7 +88,7 @@ class _RegisterAccountPageState extends State<RegisterAccountPage> {
                       const SizedBox(height: 16),
                       AppTextField(
                         controller: _passwordController,
-                        label: 'Senha',
+                        label: 'Password',
                         keyboardType: TextInputType.text,
                         isObscure: true,
                         errorMessage:

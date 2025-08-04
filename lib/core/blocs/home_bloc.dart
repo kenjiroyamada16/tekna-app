@@ -138,7 +138,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       _tasksList.clear();
       _tasksList.addAll(tasks);
 
-      emit(HomeSuccess(tasks: tasks));
+      emit(HomeSuccess(tasks: tasks, message: 'Task created successfully'));
     } on Exception catch (e) {
       if (e is AppException) {
         emit(HomeError(e.userFriendlyMessage));
