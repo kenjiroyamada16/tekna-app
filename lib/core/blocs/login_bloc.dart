@@ -14,15 +14,15 @@ class LoginWithEmailPassword extends LoginEvent {
   LoginWithEmailPassword({required this.email, required this.password});
 }
 
-class EmailChanged extends LoginEvent {
+class LoginEmailChanged extends LoginEvent {
   final String email;
 
-  EmailChanged({required this.email});
+  LoginEmailChanged({required this.email});
 }
 
-class PasswordChanged extends LoginEvent {
+class LoginPasswordChanged extends LoginEvent {
   final String password;
-  PasswordChanged({required this.password});
+  LoginPasswordChanged({required this.password});
 }
 
 class LoginInit extends LoginEvent {}
@@ -34,7 +34,10 @@ class LoginState {
 
   LoginState({this.emailErrorMessage, this.passwordErrorMessage});
 
-  LoginState copyWith({String? emailErrorMessage, String? passwordErrorMessage}) {
+  LoginState copyWith({
+    String? emailErrorMessage,
+    String? passwordErrorMessage,
+  }) {
     return LoginState(
       emailErrorMessage: emailErrorMessage ?? this.emailErrorMessage,
       passwordErrorMessage: passwordErrorMessage ?? this.passwordErrorMessage,
@@ -59,63 +62,88 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   LoginBloc() : super(LoginInitial()) {
     on<LoginInit>((_, emit) => emit(LoginInitial()));
     on<LoginWithEmailPassword>(_loginWithEmailPassword);
-    on<EmailChanged>(_onEmailChanged);
-    on<PasswordChanged>(_onPasswordChanged);
+    on<LoginEmailChanged>(_onEmailChanged);
+    on<LoginPasswordChanged>(_onPasswordChanged);
   }
 
-  Future<void> _loginWithEmailPassword(LoginWithEmailPassword event, Emitter<LoginState> emit) async {
+  Future<void> _loginWithEmailPassword(
+    LoginWithEmailPassword event,
+    Emitter<LoginState> emit,
+  ) async {
     if (state is LoginLoading) return;
 
     final emailError = _validateEmail(event.email);
     final passwordError = _validatePassword(event.password);
 
     if (emailError.isNotEmpty || passwordError.isNotEmpty) {
-      return emit(state.copyWith(emailErrorMessage: emailError, passwordErrorMessage: passwordError));
+      return emit(
+        state.copyWith(
+          emailErrorMessage: emailError,
+          passwordErrorMessage: passwordError,
+        ),
+      );
     }
 
     emit(LoginLoading());
 
     try {
       final supabaseService = ServiceLocator.get<SupabaseServiceProtocol>();
-      await supabaseService.loginWithEmailAndPassword(email: event.email, password: event.password);
+      await supabaseService.loginWithEmailAndPassword(
+        email: event.email,
+        password: event.password,
+      );
 
       if (await supabaseService.currentSession != null) {
         emit(LoginSuccess());
       } else {
-        emit(LoginFailure(errorMessage: 'Não foi possível realizar o login. Por favor, tente novamente.'));
+        emit(
+          LoginFailure(errorMessage: 'Unable to sign in. Please try again.'),
+        );
       }
     } on Exception catch (exception) {
       if (exception is AuthApiException && exception.statusCode == '400') {
-        return emit(LoginFailure(errorMessage: 'Credenciais inválidas'));
+        return emit(LoginFailure(errorMessage: 'Invalid credentials'));
       }
 
-      emit(LoginFailure(errorMessage: 'Ocorreu um erro na requisição. Por favor, tente novamente'));
+      emit(
+        LoginFailure(
+          errorMessage: 'An error occurred with the request. Please try again',
+        ),
+      );
     }
   }
 
-  Future<void> _onEmailChanged(EmailChanged event, Emitter<LoginState> emit) async {
+  Future<void> _onEmailChanged(
+    LoginEmailChanged event,
+    Emitter<LoginState> emit,
+  ) async {
     final emailError = _validateEmail(event.email);
 
     emit(state.copyWith(emailErrorMessage: emailError));
   }
 
-  Future<void> _onPasswordChanged(PasswordChanged event, Emitter<LoginState> emit) async {
+  Future<void> _onPasswordChanged(
+    LoginPasswordChanged event,
+    Emitter<LoginState> emit,
+  ) async {
     final passwordError = _validatePassword(event.password);
 
     emit(state.copyWith(passwordErrorMessage: passwordError));
   }
 
   String _validateEmail(String email) {
-    final emailRegex = RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+");
-    if (email.isEmpty) return 'Informe o e-mail';
+    final emailRegex = RegExp(
+      r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
+    );
+    if (email.isEmpty) return 'Enter email';
 
-    if (!emailRegex.hasMatch(email)) return 'E-mail inválido';
+    if (!emailRegex.hasMatch(email)) return 'Invalid email';
 
     return '';
   }
 
   String _validatePassword(String password) {
-    if (password.isEmpty) return 'Informe a senha';
+    if (password.isEmpty) return 'Enter password';
 
     return '';
   }

@@ -51,7 +51,8 @@ class _LoginPageState extends State<LoginPage> {
               },
               builder: (_, state) {
                 final hasFormError =
-                    (state.emailErrorMessage?.isNotEmpty ?? false) || (state.passwordErrorMessage?.isNotEmpty ?? false);
+                    (state.emailErrorMessage?.isNotEmpty ?? false) ||
+                    (state.passwordErrorMessage?.isNotEmpty ?? false);
 
                 return Form(
                   key: _formKey,
@@ -59,30 +60,49 @@ class _LoginPageState extends State<LoginPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text('Entrar', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                      Text('Insira seu email e senha para continuar!'),
+                      Text(
+                        'Sign in',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text('Enter your email and password to proceed!'),
                       SizedBox(height: 16),
                       AppTextField(
                         controller: _emailController,
-                        label: 'E-mail',
+                        label: 'Email',
                         keyboardType: TextInputType.emailAddress,
-                        errorMessage: state.emailErrorMessage?.isEmpty ?? true ? null : state.emailErrorMessage,
-                        onChanged: (value) => _bloc.add(EmailChanged(email: value)),
+                        errorMessage: state.emailErrorMessage?.isEmpty ?? true
+                            ? null
+                            : state.emailErrorMessage,
+                        onChanged: (value) =>
+                            _bloc.add(LoginEmailChanged(email: value)),
                       ),
                       const SizedBox(height: 16),
                       AppTextField(
                         controller: _passwordController,
-                        label: 'Senha',
+                        label: 'Password',
                         keyboardType: TextInputType.text,
                         isObscure: true,
-                        errorMessage: state.passwordErrorMessage?.isEmpty ?? true ? null : state.passwordErrorMessage,
-                        onChanged: (value) => _bloc.add(PasswordChanged(password: value)),
+                        errorMessage:
+                            state.passwordErrorMessage?.isEmpty ?? true
+                            ? null
+                            : state.passwordErrorMessage,
+                        onChanged: (value) =>
+                            _bloc.add(LoginPasswordChanged(password: value)),
                       ),
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: () => Navigator.pushReplacementNamed(context, AppRouter.registerAccountroute),
-                          child: Text('Ainda não possui conta? Crie uma agora.', style: TextStyle(fontSize: 12)),
+                          onPressed: () => Navigator.pushReplacementNamed(
+                            context,
+                            AppRouter.registerAccountroute,
+                          ),
+                          child: Text(
+                            "Don't have an account yet? Create one now.",
+                            style: TextStyle(fontSize: 12),
+                          ),
                         ),
                       ),
                       SizedBox(height: 40),
@@ -93,9 +113,11 @@ class _LoginPageState extends State<LoginPage> {
                           child: state is LoginLoading
                               ? SizedBox.square(
                                   dimension: 16,
-                                  child: CircularProgressIndicator(color: AppColors.backgroundColor),
+                                  child: CircularProgressIndicator(
+                                    color: AppColors.backgroundColor,
+                                  ),
                                 )
-                              : const Text('Entrar'),
+                              : const Text('Sign in'),
                         ),
                       ),
                     ],
@@ -118,14 +140,17 @@ class _LoginPageState extends State<LoginPage> {
 
   void _navigateHome() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showMessage('Autenticado com sucesso');
+      _showMessage('Authenticated successfully');
       Navigator.pushReplacementNamed(context, AppRouter.homeRoute);
     });
   }
 
   void _showMessage(String message, [Color? color]) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final snackbar = SnackBar(backgroundColor: color ?? AppColors.primaryColor, content: Text(message));
+      final snackbar = SnackBar(
+        backgroundColor: color ?? AppColors.primaryColor,
+        content: Text(message),
+      );
 
       ScaffoldMessenger.of(context).showSnackBar(snackbar);
     });

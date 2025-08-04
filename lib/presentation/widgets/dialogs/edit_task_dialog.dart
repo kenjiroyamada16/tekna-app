@@ -1,0 +1,219 @@
+import 'package:flutter/material.dart';
+
+import '../../../data/entities/task.dart';
+import '../../../data/entities/task_category.dart';
+import '../../../shared/enum/task_status.dart';
+import '../../../shared/utils/date_input_formatter.dart';
+import '../../../shared/utils/extensions/date_extensions.dart';
+import '../../../style/app_colors.dart';
+
+class EditTaskDialog extends StatefulWidget {
+  final Task task;
+  final List<TaskCategory> categories;
+
+  const EditTaskDialog({
+    required this.task,
+    required this.categories,
+    super.key,
+  });
+
+  @override
+  State<EditTaskDialog> createState() => _EditTaskDialogState();
+}
+
+class _EditTaskDialogState extends State<EditTaskDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _categories = List<TaskCategory>.empty(growable: true);
+  final _expiryDateTextController = TextEditingController();
+  TaskStatus _selectedStatus = TaskStatus.todo;
+  TaskCategory? _selectedCategory;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController.text = widget.task.title;
+    _descriptionController.text = widget.task.description ?? '';
+    _expiryDateTextController.text =
+        widget.task.expiryDate?.toFormattedDate() ?? '';
+    _categories.addAll(widget.categories);
+    _selectedCategory = _categories.where((category) {
+      return category.id == widget.task.category?.id;
+    }).firstOrNull;
+    _selectedStatus =
+        TaskStatus.values.where((status) {
+          return status.label == widget.task.status;
+        }).firstOrNull ??
+        TaskStatus.todo;
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text(
+        'Edit Task',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: AppColors.primaryColor,
+        ),
+      ),
+      content: SingleChildScrollView(
+        padding: EdgeInsets.symmetric(vertical: 12),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            spacing: 16,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _titleController,
+                decoration: InputDecoration(
+                  labelText: 'Title',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.grey),
+                  ),
+                ),
+                validator: (value) {
+                  if (value?.trim().isEmpty ?? false) {
+                    return "Title can't be blank";
+                  }
+
+                  return null;
+                },
+              ),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.grey),
+                  ),
+                ),
+              ),
+              DropdownMenu<TaskCategory?>(
+                label: Text('Category'),
+                expandedInsets: EdgeInsets.zero,
+                initialSelection: _selectedCategory,
+                inputDecorationTheme: InputDecorationTheme(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                dropdownMenuEntries: _categories.map((category) {
+                  return DropdownMenuEntry(
+                    value: category,
+                    label: category.name,
+                  );
+                }).toList(),
+                onSelected: (category) {
+                  _selectedCategory = category;
+                },
+              ),
+              DropdownMenu<TaskStatus?>(
+                label: Text('Status'),
+                initialSelection: _selectedStatus,
+                expandedInsets: EdgeInsets.zero,
+                inputDecorationTheme: InputDecorationTheme(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                dropdownMenuEntries: TaskStatus.values.map((value) {
+                  return DropdownMenuEntry(value: value, label: value.label);
+                }).toList(),
+                onSelected: (value) {
+                  _selectedStatus = value ?? TaskStatus.todo;
+                },
+              ),
+              TextFormField(
+                controller: _expiryDateTextController,
+                inputFormatters: [DateInputFormatter()],
+                validator: (date) {
+                  if (date?.isEmpty ?? true) return null;
+
+                  final expiryDate = DateTime.tryParse(
+                    date?.replaceAll('/', '-') ?? '',
+                  );
+
+                  if (expiryDate == null) return 'Invalid date';
+
+                  if (expiryDate.isBefore(DateTime.now())) {
+                    return "Expiry date can't be in the past";
+                  }
+
+                  return null;
+                },
+                decoration: InputDecoration(
+                  labelText: 'Expiry Date',
+                  hint: Text('yyyy/MM/dd'),
+                  suffixIcon: GestureDetector(
+                    onTap: _didTapPickDate,
+                    child: Icon(Icons.calendar_month),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.grey),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _editTask,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primaryColor,
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('Edit'),
+        ),
+      ],
+    );
+  }
+
+  void _editTask() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final newTask = Task(
+      id: widget.task.id,
+      title: _titleController.text,
+      description: _descriptionController.text,
+      status: _selectedStatus.label,
+      category: _selectedCategory,
+      expiryDate: DateTime.tryParse(
+        _expiryDateTextController.text.replaceAll('/', '-'),
+      ),
+    );
+
+    Navigator.of(context).pop(newTask);
+  }
+
+  Future<void> _didTapPickDate() async {
+    final selectedDate = await showDatePicker(
+      context: context,
+      initialDate: widget.task.expiryDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime(3000),
+    );
+
+    if (selectedDate == null) return;
+
+    _expiryDateTextController.text = selectedDate.toFormattedDate();
+  }
+}
