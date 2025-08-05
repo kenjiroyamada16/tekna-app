@@ -50,6 +50,7 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _categoryController.dispose();
     super.dispose();
   }
 
@@ -264,7 +265,11 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
         return createdCategory.id == category.id;
       }).firstOrNull;
       _categoryFocusNode.unfocus();
-      widget.onUpdateCategories?.call(_categories);
+      widget.onUpdateCategories?.call(
+        _categories.where((category) {
+          return category.id != -1;
+        }).toList(),
+      );
 
       setState(() {});
     } on AppException catch (e) {
@@ -335,7 +340,7 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
       _categoryFocusNode.unfocus();
       widget.onUpdateCategories?.call(
         _categories.where((category) {
-          return category.id >= 0;
+          return category.id != -1;
         }).toList(),
       );
       _isEditting = false;
@@ -370,7 +375,7 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
 
       widget.onUpdateCategories?.call(
         _categories.where((category) {
-          return category.id >= 0;
+          return category.id != -1;
         }).toList(),
       );
 
