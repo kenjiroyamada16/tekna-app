@@ -53,6 +53,8 @@ class HomeUpdateCategories extends HomeEvent {
   HomeUpdateCategories(this.updatedCategories);
 }
 
+class HomeLogout extends HomeEvent {}
+
 // States
 abstract class HomeState {}
 
@@ -92,6 +94,8 @@ class HomeDeleteTaskBottomSheet extends HomeState {
   HomeDeleteTaskBottomSheet(this.taskId);
 }
 
+class HomeGoBackToLogin extends HomeState {}
+
 // Bloc
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final _tasksList = List<Task>.empty(growable: true);
@@ -110,6 +114,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<HomeShowEditTaskDialog>(_showEditTaskDialog);
     on<HomeEditTask>(_onEditTask);
     on<HomeUpdateCategories>(_onUpdateCategories);
+    on<HomeLogout>(_onLogoutUser);
   }
 
   Future<void> _onLoadTasks(
@@ -230,5 +235,15 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   ) {
     _categoriesList.clear();
     _categoriesList.addAll(event.updatedCategories);
+  }
+
+  Future<void> _onLogoutUser(HomeLogout event, Emitter<HomeState> emit) async {
+    try {
+      await _supabaseService.logoutUser();
+
+      emit(HomeGoBackToLogin());
+    } on AppException catch (e) {
+      emit(HomeError(e.userFriendlyMessage));
+    }
   }
 }

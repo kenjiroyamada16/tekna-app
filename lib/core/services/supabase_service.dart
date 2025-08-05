@@ -18,6 +18,7 @@ abstract class SupabaseServiceProtocol {
     required String email,
     required String password,
   });
+  Future<void> logoutUser();
 
   Future<List<Task>> getUserTasks();
   Future<void> createTask(Task newTask);
@@ -294,6 +295,18 @@ class SupabaseService extends SupabaseServiceProtocol {
     } on Exception catch (e, stackTrace) {
       Error.throwWithStackTrace(
         AppException(error: e, userFriendlyMessage: 'Error editting category'),
+        stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<void> logoutUser() async {
+    try {
+      await _client.auth.signOut();
+    } on Exception catch (e, stackTrace) {
+      Error.throwWithStackTrace(
+        AppException(error: e, userFriendlyMessage: 'Error signing you out'),
         stackTrace,
       );
     }
