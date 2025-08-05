@@ -23,6 +23,12 @@ abstract class SupabaseServiceProtocol {
   Future<void> createTask(Task newTask);
   Future<void> deleteTask(int taskId);
   Future<void> updateTask(Task updatedTask);
+  Future<TaskCategory?> createCategory(String newCategory);
+  Future<TaskCategory?> editCategory({
+    required int id,
+    required String newName,
+  });
+  Future<TaskCategory?> deleteCategory({required int id});
   Future<List<TaskCategory>> getUserCategories();
 }
 
@@ -216,6 +222,78 @@ class SupabaseService extends SupabaseServiceProtocol {
           error: e,
           userFriendlyMessage: 'Error fetching categories',
         ),
+        stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<TaskCategory> createCategory(String newCategory) async {
+    if (user == null) {
+      throw AppException(userFriendlyMessage: 'User not authenticated');
+    }
+
+    try {
+      final data = {'name': newCategory, 'user_id': user?.id};
+
+      final response = await _client
+          .from('categories')
+          .insert(data)
+          .select('id, name');
+
+      return TaskCategory.fromJson(response.first);
+    } on Exception catch (e, stackTrace) {
+      Error.throwWithStackTrace(
+        AppException(error: e, userFriendlyMessage: 'Error creating category'),
+        stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<TaskCategory?> editCategory({
+    required int id,
+    required String newName,
+  }) async {
+    if (user == null) {
+      throw AppException(userFriendlyMessage: 'User not authenticated');
+    }
+
+    try {
+      final data = {'name': newName};
+
+      final response = await _client
+          .from('categories')
+          .update(data)
+          .eq('id', id)
+          .select('id, name');
+
+      return TaskCategory.fromJson(response.first);
+    } on Exception catch (e, stackTrace) {
+      Error.throwWithStackTrace(
+        AppException(error: e, userFriendlyMessage: 'Error editting category'),
+        stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<TaskCategory?> deleteCategory({required int id}) async {
+    if (user == null) {
+      throw AppException(userFriendlyMessage: 'User not authenticated');
+    }
+
+    try {
+      final response = await _client
+          .from('categories')
+          .delete()
+          .eq('id', id)
+          .select('id, name');
+
+      return TaskCategory.fromJson(response.first);
+    } on Exception catch (e, stackTrace) {
+      Error.throwWithStackTrace(
+        AppException(error: e, userFriendlyMessage: 'Error editting category'),
         stackTrace,
       );
     }
