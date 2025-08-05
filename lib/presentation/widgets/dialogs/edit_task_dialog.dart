@@ -52,6 +52,7 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
     _selectedCategory = _categories.where((category) {
       return category.id == widget.task.category?.id;
     }).firstOrNull;
+    _categoryController.text = _selectedCategory?.name ?? '';
     _selectedStatus =
         TaskStatus.values.where((status) {
           return status.label == widget.task.status;
@@ -64,6 +65,7 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _categoryController.dispose();
     super.dispose();
   }
 
@@ -115,7 +117,6 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
               DropdownMenu<TaskCategory?>(
                 label: Text('Category'),
                 textInputAction: TextInputAction.done,
-                initialSelection: _selectedCategory,
                 focusNode: _selectedCategory?.id == -1 || _isEditting
                     ? _categoryFocusNode
                     : null,
@@ -127,12 +128,7 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
                   ),
                 ),
                 selectedTrailingIcon: _trailingIcon,
-                trailingIcon: _selectedCategory?.id != -1
-                    ? null
-                    : GestureDetector(
-                        onTap: _createCategory,
-                        child: Icon(Icons.add_circle),
-                      ),
+                trailingIcon: _trailingIcon,
                 dropdownMenuEntries: _categories.map((category) {
                   return DropdownMenuEntry(
                     value: category,
@@ -316,7 +312,11 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
         return createdCategory.id == category.id;
       }).firstOrNull;
       _categoryFocusNode.unfocus();
-      widget.onUpdateCategories?.call(_categories);
+      widget.onUpdateCategories?.call(
+        _categories.where((category) {
+          return category.id != -1;
+        }).toList(),
+      );
 
       setState(() {});
     } on AppException catch (e) {
@@ -356,7 +356,7 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
       _categoryFocusNode.unfocus();
       widget.onUpdateCategories?.call(
         _categories.where((category) {
-          return category.id >= 0;
+          return category.id != -1;
         }).toList(),
       );
       _isEditting = false;
@@ -405,10 +405,14 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
           AppColors.errorColor,
         );
       }
+      if (_selectedCategory == deletedCategory) {
+        _selectedCategory = null;
+        _categoryController.clear();
+      }
 
       widget.onUpdateCategories?.call(
         _categories.where((category) {
-          return category.id >= 0;
+          return category.id != -1;
         }).toList(),
       );
 
