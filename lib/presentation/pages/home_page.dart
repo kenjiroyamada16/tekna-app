@@ -86,7 +86,7 @@ class _HomePageState extends State<HomePage> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
+            icon: const Icon(Icons.refresh, color: AppColors.white),
             onPressed: () => _homeBloc.add(HomeLoadTasks()),
           ),
         ],
@@ -129,7 +129,7 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                    Icon(Icons.error_outline, size: 64, color: AppColors.errorColor),
                     const SizedBox(height: 16),
                     Text(
                       state.message,
