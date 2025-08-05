@@ -90,7 +90,7 @@ class _HomePageState extends State<HomePage> {
                   Text(
                     state.message,
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey[600]),
+                    style: TextStyle(color: AppColors.grey),
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
@@ -108,20 +108,20 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.task_alt, size: 64, color: Colors.grey[400]),
+                    Icon(Icons.task_alt, size: 64, color: AppColors.grey),
                     const SizedBox(height: 16),
                     Text(
                       'No task found',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w500,
-                        color: Colors.grey[600],
+                        color: AppColors.grey,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Start creating a new task!',
-                      style: TextStyle(color: Colors.grey[500]),
+                      style: TextStyle(color: AppColors.grey),
                     ),
                   ],
                 ),
@@ -157,25 +157,6 @@ class _HomePageState extends State<HomePage> {
           borderRadius: BorderRadiusGeometry.circular(20),
         ),
         child: Icon(Icons.add, color: AppColors.backgroundColor),
-      ),
-    );
-  }
-
-  Widget _getFabItem({required String label, required Widget leadingIcon}) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        child: Row(spacing: 8, children: [leadingIcon, Text(label)]),
       ),
     );
   }
