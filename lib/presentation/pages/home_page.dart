@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
 import '../../core/blocs/home_bloc.dart';
+import '../../core/di/injector.dart';
+import '../../core/services/supabase_service.dart';
 import '../../data/entities/task.dart';
 import '../../data/entities/task_category.dart';
 import '../../style/app_colors.dart';
@@ -55,7 +56,7 @@ class _HomePageState extends State<HomePage> {
         bloc: _homeBloc,
         listener: (_, state) {
           if (state is HomeSuccess && state.message != null) {
-            _showSuccessMessage(state.message ?? '');
+            _showMessage(state.message ?? '', AppColors.secondaryColor);
           }
 
           if (state is HomeCreateTaskDialog) {
@@ -63,7 +64,7 @@ class _HomePageState extends State<HomePage> {
           }
 
           if (state is HomeError) {
-            _showErrorMessage(state.message);
+            _showMessage(state.message, AppColors.errorColor);
           }
 
           if (state is HomeDeleteTaskBottomSheet) {
@@ -89,7 +90,7 @@ class _HomePageState extends State<HomePage> {
                   Text(
                     state.message,
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey[600]),
+                    style: TextStyle(color: AppColors.grey),
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
@@ -107,20 +108,20 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.task_alt, size: 64, color: Colors.grey[400]),
+                    Icon(Icons.task_alt, size: 64, color: AppColors.grey),
                     const SizedBox(height: 16),
                     Text(
                       'No task found',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w500,
-                        color: Colors.grey[600],
+                        color: AppColors.grey,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Start creating a new task!',
-                      style: TextStyle(color: Colors.grey[500]),
+                      style: TextStyle(color: AppColors.grey),
                     ),
                   ],
                 ),
@@ -149,48 +150,13 @@ class _HomePageState extends State<HomePage> {
           return const SizedBox.shrink();
         },
       ),
-      floatingActionButton: SpeedDial(
-        elevation: 1,
-        icon: Icons.add,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _homeBloc.add(HomeShowCreateTaskDialog()),
         backgroundColor: AppColors.primaryColor,
-        animatedIconTheme: IconThemeData(color: AppColors.white),
-        children: [
-          SpeedDialChild(
-            onTap: () => _homeBloc.add(HomeShowCreateTaskDialog()),
-            labelWidget: _getFabItem(
-              label: 'Create task',
-              leadingIcon: Icon(Icons.event),
-            ),
-          ),
-          SpeedDialChild(
-            labelWidget: _getFabItem(
-              label: 'Create category',
-              leadingIcon: Icon(Icons.category),
-            ),
-            onTap: () {
-              // TODO: Create new category
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _getFabItem({required String label, required Widget leadingIcon}) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        child: Row(spacing: 8, children: [leadingIcon, Text(label)]),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadiusGeometry.circular(20),
+        ),
+        child: Icon(Icons.add, color: AppColors.backgroundColor),
       ),
     );
   }
@@ -199,7 +165,14 @@ class _HomePageState extends State<HomePage> {
     final result = await showDialog(
       context: context,
       builder: (_) {
-        return CreateTaskDialog(categories: categories);
+        return CreateTaskDialog(
+          categories: categories,
+          showMessage: _showMessage,
+          supabaseService: ServiceLocator.get<SupabaseServiceProtocol>(),
+          onUpdateCategories: (updatedCategories) {
+            _homeBloc.add(HomeUpdateCategories(updatedCategories));
+          },
+        );
       },
     );
 
@@ -219,25 +192,9 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _showErrorMessage(String errorMessage) {
+  void _showMessage(String message, [Color? color]) {
     final snackBar = SnackBar(
-      backgroundColor: AppColors.secondaryColor,
-      content: Text(
-        errorMessage,
-        style: TextStyle(
-          fontSize: 14,
-          color: AppColors.white,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
-  }
-
-  void _showSuccessMessage(String message) {
-    final snackBar = SnackBar(
-      backgroundColor: AppColors.secondaryColor,
+      backgroundColor: color ?? AppColors.secondaryColor,
       content: Text(
         message,
         style: TextStyle(
@@ -258,7 +215,15 @@ class _HomePageState extends State<HomePage> {
     final result = await showDialog(
       context: context,
       builder: (_) {
-        return EditTaskDialog(task: task, categories: categories);
+        return EditTaskDialog(
+          task: task,
+          categories: categories,
+          showMessage: _showMessage,
+          supabaseService: ServiceLocator.get<SupabaseServiceProtocol>(),
+          onUpdateCategories: (updatedCategories) {
+            _homeBloc.add(HomeUpdateCategories(updatedCategories));
+          },
+        );
       },
     );
 

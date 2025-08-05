@@ -47,6 +47,12 @@ class HomeConfirmDeleteTask extends HomeEvent {
   HomeConfirmDeleteTask(this.taskId);
 }
 
+class HomeUpdateCategories extends HomeEvent {
+  final List<TaskCategory> updatedCategories;
+
+  HomeUpdateCategories(this.updatedCategories);
+}
+
 // States
 abstract class HomeState {}
 
@@ -103,6 +109,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<HomeConfirmDeleteTask>(_onConfirmDeleteTask);
     on<HomeShowEditTaskDialog>(_showEditTaskDialog);
     on<HomeEditTask>(_onEditTask);
+    on<HomeUpdateCategories>(_onUpdateCategories);
   }
 
   Future<void> _onLoadTasks(
@@ -215,5 +222,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         emit(HomeError('Error updating task'));
       }
     }
+  }
+
+  FutureOr<void> _onUpdateCategories(
+    HomeUpdateCategories event,
+    Emitter<HomeState> emit,
+  ) {
+    _categoriesList.clear();
+    _categoriesList.addAll(event.updatedCategories);
   }
 }

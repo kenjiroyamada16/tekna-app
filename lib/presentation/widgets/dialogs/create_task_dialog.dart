@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/services/supabase_service.dart';
+import '../../../data/domain/app_exception.dart';
 import '../../../data/entities/task.dart';
 import '../../../data/entities/task_category.dart';
 import '../../../shared/enum/task_status.dart';
@@ -9,8 +11,17 @@ import '../../../style/app_colors.dart';
 
 class CreateTaskDialog extends StatefulWidget {
   final List<TaskCategory> categories;
+  final SupabaseServiceProtocol supabaseService;
+  final void Function(String message, [Color? color])? showMessage;
+  final void Function(List<TaskCategory> categoriesList)? onUpdateCategories;
 
-  const CreateTaskDialog({required this.categories, super.key});
+  const CreateTaskDialog({
+    required this.categories,
+    required this.supabaseService,
+    this.showMessage,
+    this.onUpdateCategories,
+    super.key,
+  });
 
   @override
   State<CreateTaskDialog> createState() => _CreateTaskDialogState();
@@ -20,15 +31,19 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _categoryController = TextEditingController();
+  final _categoryFocusNode = FocusNode();
   final _categories = List<TaskCategory>.empty(growable: true);
   final _expiryDateTextController = TextEditingController();
   TaskStatus _selectedStatus = TaskStatus.todo;
   TaskCategory? _selectedCategory;
+  bool _isEditting = false;
 
   @override
   void initState() {
     super.initState();
     _categories.addAll(widget.categories);
+    _categories.add(TaskCategory(id: -1, name: '+ Create category'));
   }
 
   @override
@@ -85,20 +100,64 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
               ),
               DropdownMenu<TaskCategory?>(
                 label: Text('Category'),
+                textInputAction: TextInputAction.done,
+                focusNode: _selectedCategory?.id == -1 || _isEditting
+                    ? _categoryFocusNode
+                    : null,
+                controller: _categoryController,
                 expandedInsets: EdgeInsets.zero,
                 inputDecorationTheme: InputDecorationTheme(
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+                selectedTrailingIcon: _trailingIcon,
+                trailingIcon: _trailingIcon,
                 dropdownMenuEntries: _categories.map((category) {
                   return DropdownMenuEntry(
                     value: category,
                     label: category.name,
+                    trailingIcon: Visibility(
+                      visible: category.id != -1,
+                      child: Row(
+                        children: [
+                          IconButton(
+                            iconSize: 16,
+                            icon: Icon(Icons.edit),
+                            onPressed: () {
+                              _selectedCategory = category;
+                              _categoryController.text =
+                                  _selectedCategory?.name ?? '';
+                              _categoryFocusNode.requestFocus();
+                              _isEditting = true;
+
+                              setState(() {});
+                            },
+                          ),
+                          IconButton(
+                            onPressed: () => _deleteCategory(category.id),
+                            iconSize: 16,
+                            icon: Icon(Icons.delete),
+                          ),
+                        ],
+                      ),
+                    ),
                   );
                 }).toList(),
                 onSelected: (category) {
-                  _selectedCategory = category;
+                  _isEditting = false;
+
+                  if (category?.id == -1) {
+                    _categoryController.clear();
+                    _categoryFocusNode.requestFocus();
+                  }
+
+                  _selectedCategory = TaskCategory(
+                    id: category?.id ?? -1,
+                    name: _categoryController.text,
+                  );
+
+                  setState(() {});
                 },
               ),
               DropdownMenu<TaskStatus?>(
@@ -154,6 +213,65 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
     );
   }
 
+  Widget? get _trailingIcon {
+    if (_isEditting) {
+      return GestureDetector(
+        onTap: _editCategory,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppColors.grey,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(6),
+            child: Icon(Icons.edit, size: 20, color: AppColors.backgroundColor),
+          ),
+        ),
+      );
+    }
+
+    if (_selectedCategory?.id != -1) return null;
+
+    return GestureDetector(
+      onTap: _createCategory,
+      child: Icon(Icons.add_circle),
+    );
+  }
+
+  Future<void> _createCategory() async {
+    final newCategory = _categoryController.text;
+    final categoriesNames = widget.categories.map(
+      (category) => category.name.toLowerCase(),
+    );
+
+    if (newCategory.isEmpty) return;
+    if (categoriesNames.contains(newCategory.toLowerCase())) return;
+
+    try {
+      final createdCategory = await widget.supabaseService.createCategory(
+        newCategory,
+      );
+
+      if (createdCategory == null) {
+        return widget.showMessage?.call(
+          'Could not create the category',
+          AppColors.errorColor,
+        );
+      }
+
+      _categories.insert(_categories.length - 1, createdCategory);
+      _selectedCategory = _categories.where((category) {
+        return createdCategory.id == category.id;
+      }).firstOrNull;
+      _categoryFocusNode.unfocus();
+      widget.onUpdateCategories?.call(_categories);
+
+      setState(() {});
+    } on AppException catch (e) {
+      widget.showMessage?.call(e.userFriendlyMessage, AppColors.errorColor);
+    }
+  }
+
   void _createTask() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
@@ -162,7 +280,7 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
       title: _titleController.text,
       description: _descriptionController.text,
       status: _selectedStatus.label,
-      category: _selectedCategory,
+      category: _isEditting ? null : _selectedCategory,
       expiryDate: DateTime.tryParse(
         _expiryDateTextController.text.replaceAll('/', '-'),
       ),
@@ -183,5 +301,82 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
 
     final formatter = DateFormat('yyyy/MM/dd');
     _expiryDateTextController.text = formatter.format(selectedDate);
+  }
+
+  Future<void> _editCategory() async {
+    final edittedCategoryId = _selectedCategory?.id;
+    final newCategoryName = _categoryController.text;
+
+    final categoriesNames = widget.categories.map(
+      (category) => category.name.toLowerCase(),
+    );
+
+    if (edittedCategoryId == null) return;
+    if (categoriesNames.contains(newCategoryName.toLowerCase())) return;
+
+    try {
+      final updatedCategory = await widget.supabaseService.editCategory(
+        id: edittedCategoryId,
+        newName: newCategoryName,
+      );
+
+      if (updatedCategory == null) {
+        return widget.showMessage?.call(
+          'Could not edit the category',
+          AppColors.errorColor,
+        );
+      }
+
+      final updatedIndex = _categories.indexOf(updatedCategory);
+      _categories[updatedIndex] = updatedCategory;
+      _selectedCategory = _categories.where((category) {
+        return updatedCategory == category;
+      }).firstOrNull;
+      _categoryFocusNode.unfocus();
+      widget.onUpdateCategories?.call(
+        _categories.where((category) {
+          return category.id >= 0;
+        }).toList(),
+      );
+      _isEditting = false;
+
+      setState(() {});
+    } on AppException catch (e) {
+      widget.showMessage?.call(e.userFriendlyMessage, AppColors.errorColor);
+    }
+  }
+
+  Future<void> _deleteCategory(int categoryId) async {
+    try {
+      final deletedCategory = await widget.supabaseService.deleteCategory(
+        id: categoryId,
+      );
+
+      if (deletedCategory == null) {
+        return widget.showMessage?.call(
+          'Could not edit the category',
+          AppColors.errorColor,
+        );
+      }
+
+      final hasRemovedCategory = _categories.remove(deletedCategory);
+
+      if (!hasRemovedCategory) {
+        return widget.showMessage?.call(
+          'Could not delete the category',
+          AppColors.errorColor,
+        );
+      }
+
+      widget.onUpdateCategories?.call(
+        _categories.where((category) {
+          return category.id >= 0;
+        }).toList(),
+      );
+
+      setState(() {});
+    } on AppException catch (e) {
+      widget.showMessage?.call(e.userFriendlyMessage, AppColors.errorColor);
+    }
   }
 }

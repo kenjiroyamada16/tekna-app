@@ -11,4 +11,12 @@ class TaskCategory {
   Map<String, dynamic> toJson() {
     return {'id': id, 'name': name};
   }
+
+  @override
+  bool operator ==(Object other) {
+    return other is TaskCategory && id == other.id;
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name);
 }
