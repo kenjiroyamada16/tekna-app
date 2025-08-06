@@ -451,17 +451,15 @@ class SupabaseService extends SupabaseServiceProtocol {
 
     if (currentMedia != null) {
       await bucket.update(
-        path,
+        currentMedia.storagePath,
         file,
         fileOptions: const FileOptions(upsert: true),
       );
 
-      final publicUrl = bucket.getPublicUrl(path);
       final updatedMedia = await _client
           .from('media')
-          .update({'type': mime, 'url': publicUrl, 'storage_path': path})
-          .eq('id', currentMedia.id)
           .select()
+          .eq('id', currentMedia.id)
           .single();
 
       return TaskMedia.fromJson(updatedMedia);
@@ -481,9 +479,8 @@ class SupabaseService extends SupabaseServiceProtocol {
           'type': mime,
           'url': publicUrl,
           'storage_path': path,
-          'task_id': taskId,
         })
-        .select()
+        .select('id,url,type,storage_path')
         .single();
     final media = TaskMedia.fromJson(newMedia);
 
