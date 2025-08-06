@@ -92,107 +92,182 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       body: SafeArea(
-        child: BlocConsumer<HomeBloc, HomeState>(
-          bloc: _homeBloc,
-          listener: (_, state) {
-            if (state is HomeGoBackToLogin) {
-              Navigator.pushReplacementNamed(context, AppRouter.loginRoute);
-            }
-
-            if (state is HomeSuccess && state.message != null) {
-              _showMessage(state.message ?? '', AppColors.secondaryColor);
-            }
-
-            if (state is HomeCreateTaskDialog) {
-              _showCreateTaskDialog(state.categories);
-            }
-
-            if (state is HomeError) {
-              _showMessage(state.message, AppColors.errorColor);
-            }
-
-            if (state is HomeDeleteTaskBottomSheet) {
-              _showDeleteTaskBottomSheet(state.taskId);
-            }
-
-            if (state is HomeEditTaskDialog) {
-              _showEditTaskDialog(state.task, state.categories);
-            }
-          },
-          builder: (_, state) {
-            if (state is HomeLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (state is HomeError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: 64, color: AppColors.errorColor),
-                    const SizedBox(height: 16),
-                    Text(
-                      state.message,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.grey),
+        child: CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              sliver: SliverToBoxAdapter(
+                child: TextField(
+                  onChanged: (text) {
+                    _homeBloc.add(HomeSearchTask(text));
+                  },
+                  cursorColor: AppColors.black,
+                  decoration: InputDecoration(
+                    hint: Text('Search for your task!'),
+                    filled: true,
+                    fillColor: AppColors.white,
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => _homeBloc.add(HomeLoadTasks()),
-                      child: const Text('Try again'),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: AppColors.grey),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ],
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide(color: AppColors.grey),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
-              );
-            }
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: BlocConsumer<HomeBloc, HomeState>(
+                bloc: _homeBloc,
+                listener: (_, state) {
+                  if (state is HomeGoBackToLogin) {
+                    Navigator.pushReplacementNamed(
+                      context,
+                      AppRouter.loginRoute,
+                    );
+                  }
 
-            if (state is HomeSuccess) {
-              if (state.tasks.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.task_alt, size: 64, color: AppColors.grey),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No task found',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.grey,
+                  if (state is HomeSuccess && state.message != null) {
+                    _showMessage(state.message ?? '', AppColors.secondaryColor);
+                  }
+
+                  if (state is HomeCreateTaskDialog) {
+                    _showCreateTaskDialog(state.categories);
+                  }
+
+                  if (state is HomeError) {
+                    _showMessage(state.message, AppColors.errorColor);
+                  }
+
+                  if (state is HomeDeleteTaskBottomSheet) {
+                    _showDeleteTaskBottomSheet(state.taskId);
+                  }
+
+                  if (state is HomeEditTaskDialog) {
+                    _showEditTaskDialog(state.task, state.categories);
+                  }
+                },
+                builder: (_, state) {
+                  if (state is HomeLoading) {
+                    return SliverFillRemaining(
+                      child: const Center(child: CircularProgressIndicator()),
+                    );
+                  }
+
+                  if (state is HomeError) {
+                    return SliverFillRemaining(
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              size: 64,
+                              color: AppColors.errorColor,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              state.message,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: AppColors.grey),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () => _homeBloc.add(HomeLoadTasks()),
+                              child: const Text('Try again'),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Start creating a new task!',
-                        style: TextStyle(color: AppColors.grey),
-                      ),
-                    ],
-                  ),
-                );
-              }
+                    );
+                  }
 
-              return ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 64),
-                itemCount: state.tasks.length,
-                itemBuilder: (_, index) {
-                  final task = state.tasks[index];
+                  if (state is HomeFilteredTasks) {
+                    return SliverList.builder(
+                      itemCount: state.filteredTasks.length,
+                      itemBuilder: (_, index) {
+                        final task = state.filteredTasks[index];
 
-                  return TaskCard(
-                    task: task,
-                    onTapEditTask: (oldTask) {
-                      _homeBloc.add(HomeShowEditTaskDialog(task));
-                    },
-                    onTapDeleteTask: (taskId) {
-                      _homeBloc.add(HomeShowDeleteTaskBottomSheet(taskId));
-                    },
-                  );
+                        return TaskCard(
+                          task: task,
+                          onTapEditTask: (oldTask) {
+                            _homeBloc.add(HomeShowEditTaskDialog(task));
+                          },
+                          onTapDeleteTask: (taskId) {
+                            _homeBloc.add(
+                              HomeShowDeleteTaskBottomSheet(taskId),
+                            );
+                          },
+                        );
+                      },
+                    );
+                  }
+
+                  if (state is HomeSuccess) {
+                    if (state.tasks.isEmpty) {
+                      return SliverFillRemaining(
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.task_alt,
+                                size: 64,
+                                color: AppColors.grey,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No task found',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.grey,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Start creating a new task!',
+                                style: TextStyle(color: AppColors.grey),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    return SliverList.builder(
+                      itemCount: state.tasks.length,
+                      itemBuilder: (_, index) {
+                        final task = state.tasks[index];
+
+                        return TaskCard(
+                          task: task,
+                          onTapEditTask: (oldTask) {
+                            _homeBloc.add(HomeShowEditTaskDialog(task));
+                          },
+                          onTapDeleteTask: (taskId) {
+                            _homeBloc.add(
+                              HomeShowDeleteTaskBottomSheet(taskId),
+                            );
+                          },
+                        );
+                      },
+                    );
+                  }
+
+                  return SliverToBoxAdapter();
                 },
-              );
-            }
-
-            return const SizedBox.shrink();
-          },
+              ),
+            ),
+            SliverPadding(padding: EdgeInsets.symmetric(vertical: 32)),
+          ],
         ),
       ),
       floatingActionButton: FloatingActionButton(

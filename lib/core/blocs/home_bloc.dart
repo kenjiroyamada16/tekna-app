@@ -55,6 +55,12 @@ class HomeUpdateCategories extends HomeEvent {
 
 class HomeLogout extends HomeEvent {}
 
+class HomeSearchTask extends HomeEvent {
+  final String? query;
+
+  HomeSearchTask(this.query);
+}
+
 // States
 abstract class HomeState {}
 
@@ -96,6 +102,12 @@ class HomeDeleteTaskBottomSheet extends HomeState {
 
 class HomeGoBackToLogin extends HomeState {}
 
+class HomeFilteredTasks extends HomeState {
+  final List<Task> filteredTasks;
+
+  HomeFilteredTasks(this.filteredTasks);
+}
+
 // Bloc
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final _tasksList = List<Task>.empty(growable: true);
@@ -115,6 +127,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<HomeEditTask>(_onEditTask);
     on<HomeUpdateCategories>(_onUpdateCategories);
     on<HomeLogout>(_onLogoutUser);
+    on<HomeSearchTask>(_onSearchTasks);
   }
 
   Future<void> _onLoadTasks(
@@ -245,5 +258,30 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     } on AppException catch (e) {
       emit(HomeError(e.userFriendlyMessage));
     }
+  }
+
+  Future<void> _onSearchTasks(
+    HomeSearchTask event,
+    Emitter<HomeState> emit,
+  ) async {
+    final query = event.query?.toLowerCase();
+
+    if (query == null || query.isEmpty) {
+      return emit(HomeSuccess(tasks: _tasksList));
+    }
+
+    final filteredTasks = _tasksList.where((task) {
+      final title = task.title.toLowerCase();
+      final description = task.description?.toLowerCase() ?? '';
+      final categoryName = task.category?.name.toLowerCase() ?? '';
+      final status = task.status.toLowerCase();
+
+      return title.contains(query) ||
+          description.contains(query) ||
+          categoryName.contains(query) ||
+          status.toLowerCase().contains(query);
+    }).toList();
+
+    emit(HomeFilteredTasks(filteredTasks));
   }
 }
