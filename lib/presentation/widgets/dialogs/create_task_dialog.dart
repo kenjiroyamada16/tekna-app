@@ -1,10 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/services/supabase_service.dart';
 import '../../../data/domain/app_exception.dart';
 import '../../../data/entities/task.dart';
 import '../../../data/entities/task_category.dart';
+import '../../../shared/components/task_media_selector.dart';
 import '../../../shared/enum/task_status.dart';
 import '../../../shared/utils/date_input_formatter.dart';
 import '../../../style/app_colors.dart';
@@ -38,6 +42,7 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
   TaskStatus _selectedStatus = TaskStatus.todo;
   TaskCategory? _selectedCategory;
   bool _isEditting = false;
+  XFile? _selectedMedia;
 
   @override
   void initState() {
@@ -177,6 +182,13 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
                   _selectedStatus = value ?? TaskStatus.todo;
                 },
               ),
+              TaskMediaSelector(
+                onUpdateMedia: (media) {
+                  setState(() {
+                    _selectedMedia = media;
+                  });
+                },
+              ),
               TextFormField(
                 controller: _expiryDateTextController,
                 inputFormatters: [DateInputFormatter()],
@@ -206,7 +218,7 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
           onPressed: _createTask,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primaryColor,
-            foregroundColor: Colors.white,
+            foregroundColor: AppColors.white,
           ),
           child: const Text('Create'),
         ),
@@ -277,21 +289,31 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
     }
   }
 
-  void _createTask() {
+  Future<void> _createTask() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    final newTask = Task(
-      id: 0,
-      title: _titleController.text,
-      description: _descriptionController.text,
-      status: _selectedStatus.label,
-      category: _isEditting ? null : _selectedCategory,
-      expiryDate: DateTime.tryParse(
-        _expiryDateTextController.text.replaceAll('/', '-'),
-      ),
-    );
+    try {
+      final createdMedia = await widget.supabaseService.uploadTaskMedia(
+        file: File(_selectedMedia?.path ?? ''),
+        fileName: _selectedMedia?.name ?? '',
+      );
 
-    Navigator.of(context).pop(newTask);
+      final newTask = Task(
+        id: 0,
+        title: _titleController.text,
+        description: _descriptionController.text,
+        status: _selectedStatus.label,
+        category: _isEditting ? null : _selectedCategory,
+        media: createdMedia,
+        expiryDate: DateTime.tryParse(
+          _expiryDateTextController.text.replaceAll('/', '-'),
+        ),
+      );
+
+      if (mounted) Navigator.of(context).pop(newTask);
+    } on AppException catch (e) {
+      widget.showMessage?.call(e.userFriendlyMessage, AppColors.errorColor);
+    }
   }
 
   Future<void> _didTapPickDate() async {

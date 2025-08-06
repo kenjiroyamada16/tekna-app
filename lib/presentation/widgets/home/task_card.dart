@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../data/entities/task.dart';
@@ -32,121 +33,176 @@ class TaskCard extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
+        child: Column(
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Visibility(
-                    visible: status != null,
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: status?.color,
-                            borderRadius: BorderRadius.circular(24),
-                          ),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Visibility(
+                        visible: status != null,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 4,
-                              horizontal: 8,
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: status?.color,
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 4,
+                                  horizontal: 8,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  spacing: 4,
+                                  children: [
+                                    Icon(status?.icon, size: 16),
+                                    Text(
+                                      status?.label ?? '',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              spacing: 4,
-                              children: [
-                                Icon(status?.icon, size: 16),
-                                Text(
-                                  status?.label ?? '',
+                          ),
+                        ),
+                      ),
+                      Text(
+                        task.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        task.description ?? '',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      Visibility(
+                        visible: task.category?.name.isNotEmpty ?? false,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: AppColors.accentColor,
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 4,
+                                  horizontal: 8,
+                                ),
+                                child: Text(
+                                  task.category?.name ?? '',
                                   style: TextStyle(fontSize: 12),
                                 ),
-                              ],
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
-                  Text(
-                    task.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(task.description ?? '', style: TextStyle(fontSize: 14)),
-                  Visibility(
-                    visible: task.category?.name.isNotEmpty ?? false,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: AppColors.accentColor,
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 4,
-                              horizontal: 8,
-                            ),
-                            child: Text(
-                              task.category?.name ?? '',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(width: 16),
-            Column(
-              spacing: 8,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                SizedBox.shrink(),
-                Row(
-                  children: [
-                    ElevatedButton(
-                      onPressed: () => onTapEditTask?.call(task),
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.all(8),
-                        textStyle: TextStyle(fontSize: 12),
-                      ),
-                      child: Text('Edit'),
-                    ),
-                    SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () => onTapDeleteTask?.call(task.id),
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.all(8),
-                        textStyle: TextStyle(fontSize: 12),
-                        backgroundColor: AppColors.errorColor,
-                      ),
-                      child: Text('Delete'),
-                    ),
-                  ],
-                ),
-                Visibility(
-                  visible: task.expiryDate != null,
-                  child: Row(
-                    spacing: 8,
-                    children: [
-                      Icon(Icons.access_time_outlined, size: 16),
-                      _expiryDateLabelWidget,
                     ],
                   ),
                 ),
+                SizedBox(width: 16),
+                Column(
+                  spacing: 8,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    SizedBox.shrink(),
+                    Row(
+                      children: [
+                        ElevatedButton(
+                          onPressed: () => onTapEditTask?.call(task),
+                          style: ElevatedButton.styleFrom(
+                            padding: EdgeInsets.all(8),
+                            textStyle: TextStyle(fontSize: 12),
+                          ),
+                          child: Text('Edit'),
+                        ),
+                        SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () => onTapDeleteTask?.call(task.id),
+                          style: ElevatedButton.styleFrom(
+                            padding: EdgeInsets.all(8),
+                            textStyle: TextStyle(fontSize: 12),
+                            backgroundColor: AppColors.errorColor,
+                          ),
+                          child: Text('Delete'),
+                        ),
+                      ],
+                    ),
+                    Visibility(
+                      visible: task.expiryDate != null,
+                      child: Row(
+                        spacing: 8,
+                        children: [
+                          Visibility(
+                            visible:
+                                task.expiryDate?.isAfter(DateTime.now()) ??
+                                false,
+                            child: Icon(
+                              Icons.access_time_outlined,
+                              color:
+                                  (task.expiryDate
+                                              ?.difference(DateTime.now())
+                                              .inDays ??
+                                          0) >
+                                      7
+                                  ? AppColors.secondaryColor
+                                  : AppColors.errorColor,
+                              size: 16,
+                            ),
+                          ),
+                          _expiryDateLabelWidget,
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ],
+            ),
+            SizedBox(height: 12),
+            Visibility(
+              visible: task.media != null,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: CachedNetworkImage(
+                  imageUrl: task.media?.url ?? '',
+                  fit: BoxFit.cover,
+                  height: 200,
+                  errorWidget: (_, __, ___) {
+                    return Container(
+                      color: AppColors.grey.withValues(alpha: 0.3),
+                      child: const Icon(
+                        Icons.image_not_supported,
+                        size: 40,
+                        color: AppColors.grey,
+                      ),
+                    );
+                  },
+                  progressIndicatorBuilder: (_, __, ___) {
+                    return Center(
+                      child: SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(
+                          color: AppColors.secondaryColor,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
           ],
         ),
@@ -200,7 +256,7 @@ class TaskCard extends StatelessWidget {
 
     return Text(
       expiryDate.toFormattedDate(),
-      style: const TextStyle(fontSize: 12, color: AppColors.primaryColor),
+      style: const TextStyle(fontSize: 12, color: AppColors.secondaryColor),
     );
   }
 }

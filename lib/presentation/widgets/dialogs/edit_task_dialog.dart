@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/services/supabase_service.dart';
 import '../../../data/domain/app_exception.dart';
 import '../../../data/entities/task.dart';
 import '../../../data/entities/task_category.dart';
+import '../../../shared/components/task_media_selector.dart';
 import '../../../shared/enum/task_status.dart';
 import '../../../shared/utils/date_input_formatter.dart';
 import '../../../shared/utils/extensions/date_extensions.dart';
@@ -40,6 +42,7 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
   TaskStatus _selectedStatus = TaskStatus.todo;
   TaskCategory? _selectedCategory;
   bool _isEditting = false;
+  XFile? _selectedFile;
 
   @override
   void initState() {
@@ -192,6 +195,14 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
                   _selectedStatus = value ?? TaskStatus.todo;
                 },
               ),
+              TaskMediaSelector(
+                initialMedia: widget.task.media,
+                onUpdateMedia: (media) {
+                  setState(() {
+                    _selectedFile = media;
+                  });
+                },
+              ),
               TextFormField(
                 controller: _expiryDateTextController,
                 inputFormatters: [DateInputFormatter()],
@@ -269,8 +280,14 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
     );
   }
 
-  void _editTask() {
+  Future<void> _editTask() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final updatedMedia = await widget.supabaseService.editTaskMedia(
+      taskId: widget.task.id,
+      newMediaFile: _selectedFile,
+      currentMedia: widget.task.media,
+    );
 
     final newTask = Task(
       id: widget.task.id,
@@ -278,12 +295,13 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
       description: _descriptionController.text,
       status: _selectedStatus.label,
       category: _selectedCategory,
+      media: updatedMedia,
       expiryDate: DateTime.tryParse(
         _expiryDateTextController.text.replaceAll('/', '-'),
       ),
     );
 
-    Navigator.of(context).pop(newTask);
+    if (mounted) Navigator.of(context).pop(newTask);
   }
 
   Future<void> _createCategory() async {

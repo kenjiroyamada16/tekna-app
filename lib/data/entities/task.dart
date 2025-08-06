@@ -22,19 +22,17 @@ class Task {
   });
 
   factory Task.fromJson(Map<String, dynamic> json) {
-    final mediaJsonList = (json['media'] as List<dynamic>?);
-
     return Task(
       id: json['id'],
       title: json['title'],
       status: json['status'],
       description: json['description'],
+      expiryDate: DateTime.tryParse(json['expiry_date'] ?? ''),
       category: json['category'] != null
           ? TaskCategory.fromJson(json['category'])
           : null,
-      expiryDate: DateTime.tryParse(json['expiry_date'] ?? ''),
-      media: (mediaJsonList?.isNotEmpty ?? false)
-          ? TaskMedia.fromJson(mediaJsonList?.first as Map<String, dynamic>)
+      media: json['media'] != null
+          ? TaskMedia.fromJson(json['media'])
           : null,
     );
   }
@@ -43,6 +41,7 @@ class Task {
     return {
       'title': title,
       'status': status,
+      if (media != null) 'media_id': media?.id,
       if (description != null) 'description': description,
       if (category != null) 'category_id': category?.id,
       if (expiryDate != null) 'expiry_date': expiryDate?.toDbFormat(),
